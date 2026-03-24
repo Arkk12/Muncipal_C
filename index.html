@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MUNITRACK</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-city"></i>
+                    <span>MUNITRACK</span>
+                </div>
+                <nav class="nav">
+                    <ul class="nav-list">
+                        <li><a href="#home" class="nav-link active" data-page="home">Home</a></li>
+                        <li><a href="#register" class="nav-link" data-page="register">Register Complaint</a></li>
+                        <li><a href="#track" class="nav-link" data-page="track">Track Complaint</a></li>
+                        <li><a href="#contact" class="nav-link" data-page="contact">Contact</a></li>
+                        <!--<li><a href="#admin" class="nav-link" data-page="admin">Admin</a></li>-->
+                    </ul>
+                </nav>
+                <div class="mobile-menu-btn">
+                    <i class="fas fa-bars"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Home Page -->
+        <section id="home" class="page active">
+            <div class="hero">
+                <div class="container">
+                    <div class="hero-content">
+                        <h1>Welcome to Municipal Corporation</h1>
+                        <p>We're here to serve you better. Report issues, track complaints, and help us improve our city together.</p>
+                        <button class="btn btn-primary" onclick="showPage('register')">
+                            <i class="fas fa-plus"></i>
+                            Submit Complaint
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="services-section">
+                <div class="container">
+                    <h2>Our Services</h2>
+                    <div class="services-grid">
+                        <div class="service-card">
+                            <i class="fas fa-road"></i>
+                            <h3>Road Maintenance</h3>
+                            <p>Report potholes, street lights, and road damage</p>
+                        </div>
+                        <div class="service-card">
+                            <i class="fas fa-trash"></i>
+                            <h3>Waste Management</h3>
+                            <p>Garbage collection and sanitation issues</p>
+                        </div>
+                        <div class="service-card">
+                            <i class="fas fa-tint"></i>
+                            <h3>Water Supply</h3>
+                            <p>Water quality, supply, and pipeline issues</p>
+                        </div>
+                        <div class="service-card">
+                            <i class="fas fa-leaf"></i>
+                            <h3>Parks & Gardens</h3>
+                            <p>Maintenance of public parks and green spaces</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Register Complaint Page -->
+        <section id="register" class="page">
+            <div class="container">
+                <div class="page-header">
+                    <h2>Register a New Complaint</h2>
+                    <p>Please fill in the details below to submit your complaint</p>
+                </div>
+                
+                <form id="complaintForm" class="complaint-form" enctype="multipart/form-data">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="fullName">Full Name *</label>
+                            <input type="text" id="fullName" name="fullName" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="email">Email Address *</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="phone">Phone Number *</label>
+                            <input type="tel" id="phone" name="phone" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="category">Complaint Category *</label>
+                            <select id="category" name="category" required>
+                                <option value="">Select Category</option>
+                                <option value="road">Road Maintenance</option>
+                                <option value="waste">Waste Management</option>
+                                <option value="water">Water Supply</option>
+                                <option value="parks">Parks & Gardens</option>
+                                <option value="streetlight">Street Lights</option>
+                                <option value="drainage">Drainage</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group full-width">
+                            <label for="address">Address *</label>
+                            <textarea id="address" name="address" rows="3" required></textarea>
+                        </div>
+                        
+                        <div class="form-group full-width">
+                            <label for="description">Complaint Description *</label>
+                            <textarea id="description" name="description" rows="5" required placeholder="Please describe the issue in detail..."></textarea>
+                        </div>
+                        
+                        <div class="form-group full-width">
+                            <label for="fileUpload">Upload Photo/Video (Optional)</label>
+                            <input type="file" id="fileUpload" name="fileUpload" accept="image/*,video/*">
+                            <small>Maximum file size: 5MB. Supported formats: JPG, PNG, MP4</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="showPage('home')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i>
+                            Submit Complaint
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Track Complaint Page -->
+        <section id="track" class="page">
+            <div class="container">
+                <div class="page-header">
+                    <h2>Track Your Complaint</h2>
+                    <p>Enter your complaint ID to check the status</p>
+                </div>
+                
+                <div class="track-form">
+                    <div class="search-box">
+                        <input type="text" id="complaintId" placeholder="Enter Complaint ID (e.g., MC2024001)">
+                        <button class="btn btn-primary" onclick="trackComplaint()">
+                            <i class="fas fa-search"></i>
+                            Track
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="trackResult" class="track-result" style="display: none;">
+                    <!-- Track result will be displayed here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Page -->
+        <section id="contact" class="page">
+            <div class="container">
+                <div class="page-header">
+                    <h2>Contact Us</h2>
+                    <p>Get in touch with us for any queries or support</p>
+                </div>
+                
+                <div class="contact-content">
+                    <div class="contact-info">
+                        <div class="contact-item">
+                            <i class="fas fa-phone"></i>
+                            <div>
+                                <h3>Phone</h3>
+                                <p>02355261047</p>
+                                <p>02355292250</p>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <i class="fas fa-envelope"></i>
+                            <div>
+                                <h3>Email</h3>
+                                <p>complaints@municipalcorp.gov</p>
+                                <p>support@municipalcorp.gov</p>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <div>
+                                <h3>Address</h3>
+                                <p>123 Municipal Building</p>
+                                <p>City Center, Chiplun 415605</p>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <i class="fas fa-clock"></i>
+                            <div>
+                                <h3>Working Hours</h3>
+                                <p>Monday - Friday: 8:00 AM - 6:00 PM</p>
+                                <p>Saturday: 9:00 AM - 2:00 PM</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Admin Login Page -->
+        <section id="admin" class="page">
+            <div class="container">
+                <!-- Admin Login Form -->
+                <div id="adminLogin" class="admin-login-container">
+                    <div class="admin-login-form">
+                        <div class="login-header">
+                            <i class="fas fa-shield-alt"></i>
+                            <h2>Admin Access</h2>
+                            <p>Please enter your credentials to access the admin dashboard</p>
+                        </div>
+                        
+                        <form id="adminLoginForm">
+                            <div class="form-group">
+                                <label for="adminUsername">Username</label>
+                                <input type="text" id="adminUsername" name="username" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="adminPassword">Password</label>
+                                <input type="password" id="adminPassword" name="password" required>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" onclick="showPage('home')">Cancel</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-sign-in-alt"></i>
+                                    Login
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <div id="loginError" class="error-message" style="display: none;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>Invalid username or password. Please try again.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Dashboard (Hidden by default) -->
+                <div id="adminDashboard" class="admin-dashboard" style="display: none;">
+                    <div class="dashboard-header">
+                        <div class="dashboard-title">
+                            <h2><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h2>
+                            <p>Manage and track all complaints</p>
+                        </div>
+                        <div class="admin-actions">
+                            <span class="admin-welcome">Welcome, <strong id="adminUserName"></strong></span>
+                            <button class="btn btn-secondary" onclick="adminLogout()">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="admin-controls">
+                        <div class="search-filter">
+                            <input type="text" id="adminSearch" placeholder="Search complaints...">
+                            <select id="statusFilter">
+                                <option value="">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="resolved">Resolved</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="filterComplaints()">
+                                <i class="fas fa-filter"></i>
+                                Filter
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="complaints-table">
+                        <table id="complaintsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Citizen Name</th>
+                                    <th>Category</th>
+                                    <th>Status</th>
+                                    <th>Assigned Officer</th>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="complaintsTableBody">
+                                <!-- Table data will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Municipal Corporation</h3>
+                    <p>Serving our citizens with dedication and transparency</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#register">Register Complaint</a></li>
+                        <li><a href="#track">Track Complaint</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Connect With Us</h3>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-linkedin"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Municipal Corporation. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Complaint Submitted Successfully!</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <i class="fas fa-check-circle success-icon"></i>
+                <p>Your complaint has been registered successfully.</p>
+                <p><strong>Complaint ID:</strong> <span id="generatedComplaintId"></span></p>
+                <p>Please save this ID to track your complaint status.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeModal()">OK</button>
+            </div>
+        </div>
+    </div>
+    <script type="module">
+        
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, addDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  
+    const firebaseConfig = {
+    apiKey: "AIzaSyCiwULO00txSRfKrGDtK0GkxloFe8yjTTo",
+    authDomain: "munitrack-185a9.firebaseapp.com",
+    projectId: "munitrack-185a9",
+    storageBucket: "munitrack-185a9.firebasestorage.app",
+    messagingSenderId: "279869593227",
+    appId: "1:279869593227:web:55a93f703a7decff0b668e",
+    measurementId: "G-M9L7871BTT"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window.db = db; // make global
+  window.addDoc = addDoc;
+  window.collection = collection;
+  window.getDocs = getDocs;
+  window.query = query;
+  window.where = where;
+</script>
+<script src="script.js"></script>
+</body>
+</html>
