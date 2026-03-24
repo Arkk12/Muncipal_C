@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Municipal Corp - Admin Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Poppins', system-ui, sans-serif;
+    }
+    .map-bg {
+      background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+      background-size: cover;
+    }
+    .table-header {
+      background: #f8fafc;
+    }
+
+    /* Modal Styles from your code */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,.6);
+      backdrop-filter: blur(6px);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .overlay.open { display: flex; animation: fadeIn .2s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .modal {
+      background: #fff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 24px 64px rgba(0,0,0,.25);
+      animation: slideUp .25s cubic-bezier(.22,1,.36,1);
+      overflow: hidden;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px) scale(.95); }
+      to { opacity: 1; transform: none; }
+    }
+    .modal-head {
+      background: linear-gradient(135deg, #1a3a8f 0%, #2351c8 100%);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-head h2 {
+      color: #fff;
+      font-size: 1.1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .btn-close {
+      background: rgba(255,255,255,.15);
+      border: none;
+      color: #fff;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-close:hover { background: rgba(255,255,255,.3); }
+
+    .modal-body { padding: 1.8rem 1.5rem; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+    .form-group { display: flex; flex-direction: column; gap: .35rem; }
+    .form-group.full { grid-column: 1 / -1; }
+    label {
+      font-size: .78rem;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    label span { color: #ef4444; }
+    input, select {
+      padding: .65rem .9rem;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: .9rem;
+      transition: all .2s;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+    }
+    .pw-wrap { position: relative; }
+    .pw-wrap input { padding-right: 2.8rem; }
+    .pw-eye {
+      position: absolute;
+      right: .8rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #94a3b8;
+    }
+    .modal-foot {
+      padding: 1rem 1.5rem 1.5rem;
+      display: flex;
+      justify-content: flex-end;
+      gap: .8rem;
+    }
+    .btn-cancel {
+      background: #f1f5f9;
+      color: #1e293b;
+      border: none;
+      border-radius: 8px;
+      padding: .65rem 1.4rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .btn-submit {
+      background: linear-gradient(135deg, #2351c8 0%, #1a3a8f 100%);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: .65rem 1.6rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,.2);
+      border-left: 5px solid #22c55e;
+      z-index: 10000;
+      transform: translateX(120%);
+      transition: transform .4s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .toast.show { transform: translateX(0); }
+  </style>
+</head>
+<body class="bg-gray-50">
+
+  <!-- Top Blue Header -->
+  <header class="bg-blue-600 text-white py-4">
+    <div class="max-w-7xl mx-auto px-6 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-yellow-400 rounded-lg flex items-center justify-center text-3xl">🏛️</div>
+        <span class="text-2xl font-semibold">Municipal Corp</span>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <div class="bg-blue-500 px-6 py-2 rounded-3xl flex items-center gap-3">
+          <i class="fas fa-user-circle text-3xl"></i>
+          <div class="text-sm">
+            <div class="font-medium">Admin</div>
+            <div class="text-blue-200 text-xs -mt-0.5">Logged In</div>
+          </div>
+        </div>
+        <button onclick="alert('Logged out successfully!')" 
+                class="bg-white text-blue-600 hover:bg-blue-50 px-6 py-2.5 rounded-3xl font-medium flex items-center gap-2 transition-all">
+          <i class="fas fa-sign-out-alt"></i>
+          Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Buttons -->
+  <div class="max-w-7xl mx-auto px-6 pt-6 pb-4">
+    <div class="flex gap-4">
+      <button id="addEmployeeBtn" 
+              class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-3xl font-medium flex items-center justify-center gap-3 transition-all active:scale-95">
+        <i class="fas fa-plus text-xl"></i>
+        Add Employees
+      </button>
+      
+      <button onclick="alert('Employees Categorization clicked')" 
+              class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-3xl font-medium flex items-center justify-center gap-3 transition-all active:scale-95">
+        <i class="fas fa-folder text-xl"></i>
+        Employees Categorization
+      </button>
+      
+      <button onclick="alert('Assign Workers clicked')" 
+              class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-3xl font-medium flex items-center justify-center gap-3 transition-all active:scale-95">
+        <i class="fas fa-user-check text-xl"></i>
+        Assign Workers
+      </button>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-6">
+
+    <div class="flex justify-start items-center mb-8">
+      <p class="text-gray-600 text-lg">
+        Welcome, <span class="font-semibold text-gray-800">admin</span>
+      </p>
+    </div>
+
+    <div class="grid grid-cols-12 gap-8">
+
+      <!-- Attendance Logs -->
+      <div class="col-span-12 lg:col-span-7 bg-white rounded-3xl shadow p-6">
+        <h2 class="text-2xl font-semibold mb-6 flex items-center gap-3">
+          <i class="fas fa-clock text-blue-600"></i> Attendance Logs
+        </h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b">
+                <th class="text-left py-4 font-medium text-gray-600">Employee ID</th>
+                <th class="text-left py-4 font-medium text-gray-600">Name</th>
+                <th class="text-left py-4 font-medium text-gray-600">Date</th>
+                <th class="text-left py-4 font-medium text-gray-600">Check-in</th>
+                <th class="text-left py-4 font-medium text-gray-600">Check-out</th>
+                <th class="text-left py-4 font-medium text-gray-600">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y">
+              <tr class="hover:bg-gray-50"><td class="py-4 font-mono">+ EMP001</td><td class="py-4">Rajesh Sharma</td><td class="py-4">25-03-2026</td><td class="py-4">09:00</td><td class="py-4">17:30</td><td><span class="bg-emerald-100 text-emerald-700 px-5 py-1 rounded-full text-xs font-medium">Present</span></td></tr>
+              <tr class="hover:bg-gray-50"><td class="py-4 font-mono">+ EMP002</td><td class="py-4">Priya Gupta</td><td class="py-4">25-03-2026</td><td class="py-4">08:45</td><td class="py-4">17:15</td><td><span class="bg-emerald-100 text-emerald-700 px-5 py-1 rounded-full text-xs font-medium">Present</span></td></tr>
+              <!-- More rows can be added -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Workers Live Maps -->
+      <div class="col-span-12 lg:col-span-5 bg-white rounded-3xl shadow p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-semibold">Workers Live Maps</h2>
+          <div class="bg-emerald-500 text-white text-xs font-semibold px-5 py-2 rounded-3xl flex items-center gap-2">
+            <i class="fas fa-circle animate-pulse"></i> Live Tracking
+          </div>
+        </div>
+        <div class="map-bg h-96 rounded-3xl relative flex items-center justify-center border border-gray-200 overflow-hidden">
+          <div class="text-center">
+            <i class="fas fa-map text-8xl text-sky-400 mb-4"></i>
+            <p class="font-medium text-gray-700">Real-time Worker Locations</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Complaints Table with Location -->
+      <div class="col-span-12 bg-white rounded-3xl shadow p-6">
+        <h2 class="text-2xl font-semibold mb-6">Complaint Reports</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="table-header border-b">
+                <th class="text-left py-4 px-6 font-medium text-gray-700">ID</th>
+                <th class="text-left py-4 px-6 font-medium text-gray-700">Citizen Name</th>
+                <th class="text-left py-4 px-6 font-medium text-gray-700">Category</th>
+                <th class="text-left py-4 px-6 font-medium text-gray-700">Status</th>
+                <th class="text-left py-4 px-6 font-medium text-gray-700">Assigned Officer</th>
+                <th class="text-left py-4 px-6 font-medium text-gray-700">Date</th>
+                <th class="text-left py-4 px-6 font-medium text-gray-700">Location</th>
+                <th class="text-left py-4 px-6 font-medium text-gray-700">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="8" class="py-20">
+                  <div class="flex flex-col items-center justify-center text-center">
+                    <i class="fas fa-search text-6xl text-gray-400 mb-6"></i>
+                    <p class="text-gray-500 text-xl font-medium">No complaints found in database</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Employee Modal (Your exact code integrated) -->
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          Add New Employee
+        </h2>
+        <button class="btn-close" id="closeBtn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group" id="g-name">
+            <label>Full Name <span>*</span></label>
+            <input type="text" id="f-name" placeholder="e.g. Rajesh Kumar"/>
+            <span class="err-txt">Please enter a name.</span>
+          </div>
+          <div class="form-group" id="g-email">
+            <label>Email Address <span>*</span></label>
+            <input type="email" id="f-email" placeholder="e.g. raj@corp.in"/>
+            <span class="err-txt">Enter a valid email.</span>
+          </div>
+          <div class="form-group" id="g-pass">
+            <label>Password <span>*</span></label>
+            <div class="pw-wrap">
+              <input type="password" id="f-pass" placeholder="Min. 6 characters"/>
+              <button class="pw-eye" id="eyeBtn" type="button">👁</button>
+            </div>
+            <span class="err-txt">Min. 6 characters required.</span>
+          </div>
+          <div class="form-group" id="g-dept">
+            <label>Department <span>*</span></label>
+            <select id="f-dept">
+              <option value="">-- Select --</option>
+              <option value="road">Road Department</option>
+              <option value="water">Water Department</option>
+              <option value="waste">Waste Management Department</option>
+              <option value="drainage">Drainage Department</option>
+              <option value="common">Common Department</option>
+            </select>
+            <span class="err-txt">Please select a department.</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-cancel" id="cancelBtn">Cancel</button>
+        <button class="btn-submit" id="submitBtn">
+          Add Employee
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    <div>
+      <strong>Employee Added!</strong>
+      <span id="toastMsg">Registered successfully.</span>
+    </div>
+  </div>
+
+  <script>
+    // Tailwind script already included via CDN
+
+    // Modal Controls
+    const overlay = document.getElementById('overlay');
+    const openBtn = document.getElementById('addEmployeeBtn');
+    const closeBtn = document.getElementById('closeBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const eyeBtn = document.getElementById('eyeBtn');
+    const passInp = document.getElementById('f-pass');
+    const toast = document.getElementById('toast');
+
+    const openModal = () => {
+      overlay.classList.add('open');
+      document.getElementById('f-name').focus();
+    };
+
+    const closeModal = () => {
+      overlay.classList.remove('open');
+      resetForm();
+    };
+
+    openBtn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+
+    // Password Toggle
+    eyeBtn.addEventListener('click', () => {
+      const isPassword = passInp.type === 'password';
+      passInp.type = isPassword ? 'text' : 'password';
+      eyeBtn.textContent = isPassword ? '🙈' : '👁';
+    });
+
+    function setErr(id, show) {
+      const group = document.getElementById('g-' + id);
+      group.classList.toggle('has-err', show);
+    }
+
+    function resetForm() {
+      ['name','email','pass','dept'].forEach(id => setErr(id, false));
+      document.getElementById('f-name').value = '';
+      document.getElementById('f-email').value = '';
+      document.getElementById('f-pass').value = '';
+      document.getElementById('f-dept').value = '';
+      passInp.type = 'password';
+      eyeBtn.textContent = '👁';
+    }
+    submitBtn.addEventListener('click', async () => {
+      const name = document.getElementById('f-name').value.trim();
+      const email = document.getElementById('f-email').value.trim();
+      const pass = document.getElementById('f-pass').value;
+      const dept = document.getElementById('f-dept').value;
+
+      if (!name || !email || pass.length < 6 || !dept) {
+        alert("Please fill all fields correctly");
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, "employee"), {
+          fullName: name,
+          email: email,
+          password: pass,
+          department: dept,
+          createdAt: new Date()
+        });
+
+        alert("Employee Added Successfully ✅");
+
+        closeModal();
+
+      } catch (error) {
+        console.error(error);
+        alert("Error saving data ❌");
+      }
+    });
+    // Submit Handler
+    /*submitBtn.addEventListener('click', () => {
+      const name = document.getElementById('f-name').value.trim();
+      const email = document.getElementById('f-email').value.trim();
+      const pass = document.getElementById('f-pass').value;
+      const dept = document.getElementById('f-dept').value;
+
+      const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+      setErr('name', !name);
+      setErr('email', !emailOk);
+      setErr('pass', pass.length < 6);
+      setErr('dept', !dept);
+
+      if (!name || !emailOk || pass.length < 6 || !dept) return;
+
+      closeModal();
+
+      // Show Toast
+      document.getElementById('toastMsg').textContent = `${name} added successfully!`;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 4000);
+    });*/
+    // Close toast on click
+   // toast.addEventListener('click', () => toast.classList.remove('show'));
+  </script>
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCiwULO00txSRfKrGDtK0GkxloFe8yjTTo",
+    authDomain: "munitrack-185a9.firebaseapp.com",
+    projectId: "munitrack-185a9",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window.db = db;
+  window.addDoc = addDoc;
+  window.collection = collection;
+</script>
+</body>
+</html>
