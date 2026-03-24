@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Municipal Works Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-base: #f0f4f8;
+    --bg-card: #ffffff;
+    --bg-surface: #f7f9fc;
+    --bg-hover: #eef2f7;
+    --border: #dce3ed;
+    --border-glow: #2e7dff33;
+    --accent: #2563eb;
+    --accent-dim: #1e4fc2;
+    --accent-glow: #2563eb18;
+    --green: #059669;
+    --green-dim: #05966918;
+    --orange: #d97706;
+    --orange-dim: #d9770618;
+    --red: #dc2626;
+    --red-dim: #dc262618;
+    --yellow: #b45309;
+    --yellow-dim: #b4530918;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --font-display: 'Rajdhani', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg-base);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── SHARED ───────────────────────────────────── */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; }
+
+  /* ── LOGIN ────────────────────────────────────── */
+  #login-screen {
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-base);
+    overflow: hidden;
+  }
+
+  .login-grid-bg {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: .35;
+    mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black 30%, transparent 100%);
+  }
+
+  .login-glow {
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, #2563eb0d 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .login-card {
+    position: relative;
+    width: 440px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px 40px 40px;
+    box-shadow: 0 0 0 1px #0000000a, 0 32px 64px #64748b28;
+    animation: cardIn .5s cubic-bezier(.16,1,.3,1) both;
+  }
+
+  @keyframes cardIn {
+    from { opacity:0; transform: translateY(24px) scale(.97); }
+    to   { opacity:1; transform: translateY(0) scale(1); }
+  }
+
+  .login-logo {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 36px;
+  }
+
+  .logo-icon {
+    width: 44px; height: 44px;
+    background: var(--accent);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 0 24px #2e7dff44;
+  }
+
+  .logo-text { font-family: var(--font-display); font-size: 22px; font-weight: 700; letter-spacing: 1px; }
+  .logo-sub  { font-size: 11px; color: var(--text-secondary); letter-spacing: 2px; text-transform: uppercase; }
+
+  .login-title {
+    font-family: var(--font-display);
+    font-size: 30px; font-weight: 700;
+    letter-spacing: .5px;
+    margin-bottom: 6px;
+  }
+
+  .login-subtitle { font-size: 14px; color: var(--text-secondary); margin-bottom: 32px; }
+
+  .field { margin-bottom: 20px; }
+
+  .field label {
+    display: block;
+    font-size: 12px; font-weight: 500;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+
+  .field-wrap { position: relative; }
+
+  .field-icon {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); font-size: 16px; pointer-events: none;
+  }
+
+  .field input {
+    width: 100%;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 13px 14px 13px 42px;
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+
+  .field input::placeholder { color: var(--text-muted); }
+
+  .field input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--border-glow);
+  }
+
+  .login-options {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 28px; font-size: 13px;
+  }
+
+  .remember { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); cursor: pointer; }
+
+  .remember input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; }
+
+  .forgot { color: var(--accent); text-decoration: none; font-size: 13px; }
+  .forgot:hover { text-decoration: underline; }
+
+  .btn-login {
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 14px;
+    font-family: var(--font-display);
+    font-size: 17px; font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: background .2s, box-shadow .2s, transform .1s;
+    position: relative; overflow: hidden;
+  }
+
+  .btn-login:hover { background: #3d8bff; box-shadow: 0 4px 20px #2e7dff44; }
+  .btn-login:active { transform: scale(.98); }
+
+  .btn-login .btn-shimmer {
+    position: absolute; top: 0; left: -100%;
+    width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, #ffffff22, transparent);
+    animation: shimmer 2.5s infinite;
+  }
+
+  @keyframes shimmer { to { left: 160%; } }
+
+  .login-footer {
+    text-align: center; margin-top: 28px;
+    font-size: 12px; color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+    letter-spacing: .5px;
+  }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 500; letter-spacing: .5px;
+    text-transform: uppercase;
+  }
+
+  /* ── DASHBOARD ────────────────────────────────── */
+  #dashboard-screen {
+    flex-direction: column;
+    background: var(--bg-base);
+  }
+
+  /* Top Nav */
+  .topnav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px;
+    height: 64px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .nav-brand { display: flex; align-items: center; gap: 10px; }
+  .nav-brand .logo-icon { width: 36px; height: 36px; font-size: 17px; border-radius: 9px; }
+  .nav-brand span { font-family: var(--font-display); font-size: 18px; font-weight: 700; letter-spacing: 1px; }
+
+  .nav-right { display: flex; align-items: center; gap: 16px; }
+
+  .nav-time {
+    font-family: var(--font-display);
+    font-size: 20px; font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 2px;
+  }
+
+  .avatar {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), #7c3aed);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-size: 15px; font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* Main layout */
+  .dash-body {
+    display: grid;
+    grid-template-columns: 1fr;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    padding: 24px 16px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+
+  .sidebar-label {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 0 12px;
+    margin: 12px 0 6px;
+  }
+
+  .sidebar-label:first-child { margin-top: 0; }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 14px; font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background .15s, color .15s;
+    user-select: none;
+  }
+
+  .nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+  .nav-item.active {
+    background: var(--accent-glow);
+    color: var(--accent);
+    border: 1px solid var(--border-glow);
+  }
+
+  .nav-item .icon { width: 18px; text-align: center; font-size: 16px; }
+
+  .nav-badge {
+    margin-left: auto;
+    background: var(--accent);
+    color: #fff;
+    font-size: 10px; font-weight: 700;
+    padding: 2px 7px; border-radius: 10px;
+  }
+
+  /* Content */
+  .dash-content {
+    overflow-y: auto;
+    padding: 28px;
+    display: flex; flex-direction: column; gap: 24px;
+  }
+
+  /* Worker header */
+  .worker-header {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 24px;
+    animation: fadeUp .4s cubic-bezier(.16,1,.3,1) both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(12px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  .worker-info { display: flex; align-items: center; gap: 16px; }
+
+  .worker-avatar {
+    width: 52px; height: 52px;
+    background: linear-gradient(135deg, var(--accent), #7c3aed);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 22px; font-weight: 700;
+  }
+
+  .worker-meta h2 { font-family: var(--font-display); font-size: 22px; font-weight: 700; }
+  .worker-meta p  { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+
+  .worker-actions { display: flex; gap: 10px; }
+
+  .btn-checkin {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid #00c97a44;
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-family: var(--font-body);
+    font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: background .2s;
+  }
+
+  .btn-checkin:hover { background: #00c97a33; }
+
+  .btn-loc {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--accent-glow);
+    color: var(--accent);
+    border: 1px solid var(--border-glow);
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-family: var(--font-body);
+    font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: background .2s;
+  }
+
+  .btn-loc:hover { background: #2e7dff33; }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    animation: fadeUp .4s .08s cubic-bezier(.16,1,.3,1) both;
+  }
+
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    position: relative; overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .stat-card.blue::before  { background: var(--accent); }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.orange::before{ background: var(--orange); }
+  .stat-card.red::before   { background: var(--red); }
+
+  .stat-label { font-size: 12px; color: var(--text-secondary); letter-spacing: .5px; margin-bottom: 8px; }
+
+  .stat-value {
+    font-family: var(--font-display);
+    font-size: 32px; font-weight: 700;
+    line-height: 1;
+  }
+
+  .stat-card.blue  .stat-value { color: var(--accent); }
+  .stat-card.green .stat-value { color: var(--green); }
+  .stat-card.orange.stat-value { color: var(--orange); }
+  .stat-card.red   .stat-value { color: var(--red); }
+
+  .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+  /* Tasks section */
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 20px; font-weight: 700;
+    letter-spacing: .5px;
+  }
+
+  .filter-row { display: flex; gap: 8px; }
+
+  .filter-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px; font-weight: 500;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer; transition: all .15s;
+    font-family: var(--font-body);
+  }
+
+  .filter-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .filter-btn.active { background: var(--accent-glow); color: var(--accent); border-color: var(--border-glow); }
+
+  /* Task cards */
+  .tasks-list { display: flex; flex-direction: column; gap: 12px; animation: fadeUp .4s .16s cubic-bezier(.16,1,.3,1) both; }
+
+  .task-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    display: grid;
+    grid-template-columns: 4px 1fr auto;
+    gap: 16px;
+    align-items: start;
+    transition: border-color .2s, background .2s;
+    cursor: pointer;
+    position: relative; overflow: hidden;
+  }
+
+  .task-card:hover { border-color: #2e7dff44; background: var(--bg-surface); }
+
+  .task-stripe { border-radius: 4px; align-self: stretch; }
+  .task-stripe.high   { background: var(--red); }
+  .task-stripe.medium { background: var(--orange); }
+  .task-stripe.low    { background: var(--green); }
+
+  .task-body {}
+
+  .task-top { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+
+  .task-id { font-size: 11px; color: var(--text-muted); font-family: monospace; }
+
+  .task-title { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
+
+  .task-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px; }
+
+  .task-meta { display: flex; gap: 16px; flex-wrap: wrap; }
+
+  .meta-chip {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text-secondary);
+  }
+
+  .meta-chip .dot { font-size: 14px; }
+
+  .task-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+
+  .priority-badge {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 6px;
+  }
+
+  .priority-badge.high   { background: var(--red-dim);    color: var(--red);    border: 1px solid #ff4b5c33; }
+  .priority-badge.medium { background: var(--orange-dim); color: var(--orange); border: 1px solid #ff8c3b33; }
+  .priority-badge.low    { background: var(--green-dim);  color: var(--green);  border: 1px solid #00c97a33; }
+
+  .status-badge {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: .5px; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 6px;
+  }
+
+  .status-badge.pending    { background: var(--yellow-dim); color: var(--yellow); border: 1px solid #ffd23f33; }
+  .status-badge.inprogress { background: var(--accent-glow); color: var(--accent); border: 1px solid var(--border-glow); }
+  .status-badge.done       { background: var(--green-dim); color: var(--green); border: 1px solid #00c97a33; }
+
+  .progress-bar-wrap { width: 100%; height: 4px; background: var(--bg-surface); border-radius: 2px; margin-top: 4px; }
+  .progress-bar { height: 100%; border-radius: 2px; transition: width .5s ease; }
+
+  /* Map preview */
+  .map-preview {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    animation: fadeUp .4s .24s cubic-bezier(.16,1,.3,1) both;
+  }
+
+  .map-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+
+  .map-body {
+    height: 180px;
+    background: var(--bg-surface);
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+
+  .map-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(#00000010 1px, transparent 1px),
+      linear-gradient(90deg, #00000010 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .map-pin {
+    position: absolute;
+    width: 16px; height: 16px;
+    background: var(--accent);
+    border-radius: 50%;
+    border: 3px solid var(--bg-card);
+    box-shadow: 0 0 16px var(--accent);
+  }
+
+  .map-route {
+    position: absolute;
+    border: 1.5px dashed #2e7dff55;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .map-label {
+    position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+    font-size: 12px; color: var(--text-muted);
+    background: var(--bg-card); padding: 4px 12px; border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+
+  /* Pulse animation for GPS dot */
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 #2e7dff88; }
+    70%  { box-shadow: 0 0 0 14px #2e7dff00; }
+    100% { box-shadow: 0 0 0 0 #2e7dff00; }
+  }
+
+  .map-pin { animation: pulse 2s infinite; }
+
+  /* Clock pulse */
+  @keyframes tickTock { 50% { opacity: .6; } }
+  .nav-time { animation: tickTock 1s step-start infinite; }
+
+  /* Notification dot */
+  .notif-dot {
+    position: relative;
+  }
+  .notif-dot::after {
+    content: '';
+    position: absolute; top: 0; right: 0;
+    width: 8px; height: 8px;
+    background: var(--red);
+    border-radius: 50%;
+    border: 2px solid var(--bg-card);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Profile dropdown */
+  .profile-wrap {
+    position: relative;
+  }
+
+  .profile-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 260px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 16px 40px #64748b22;
+    z-index: 200;
+    overflow: hidden;
+    animation: fadeUp .2s cubic-bezier(.16,1,.3,1) both;
+  }
+
+  .profile-dropdown.open { display: block; }
+
+  .profile-dropdown-top {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-surface);
+  }
+
+  .profile-dropdown-top .worker-avatar {
+    width: 42px; height: 42px;
+    font-size: 18px; border-radius: 11px; flex-shrink: 0;
+  }
+
+  .profile-dropdown-name {
+    font-family: var(--font-display);
+    font-size: 17px; font-weight: 700;
+  }
+
+  .profile-dropdown-id {
+    font-size: 11px; color: var(--text-muted); margin-top: 2px;
+  }
+
+  .profile-dropdown-body {
+    padding: 12px 18px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+
+  .profile-info-row {
+    font-size: 12px; color: var(--text-secondary);
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .profile-dropdown-footer {
+    padding: 10px 18px;
+    border-top: 1px solid var(--border);
+  }
+
+  .profile-dropdown-footer button {
+    width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 9px 14px; border-radius: 10px;
+    font-size: 13px; font-weight: 500;
+    background: transparent; border: 1px solid var(--border);
+    color: var(--text-secondary); cursor: pointer; transition: all .15s;
+    font-family: var(--font-body);
+  }
+  .profile-dropdown-footer button:hover { background: var(--red-dim); color: var(--red); border-color: #ff4b5c33; }
+
+  /* Logout btn */
+  .btn-logout {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 14px; border-radius: 10px;
+    font-size: 13px; font-weight: 500;
+    background: transparent; border: 1px solid var(--border);
+    color: var(--text-secondary); cursor: pointer; transition: all .15s;
+    font-family: var(--font-body);
+  }
+  .btn-logout:hover { background: var(--red-dim); color: var(--red); border-color: #ff4b5c33; }
+</style>
+</head>
+<body>
+
+<!-- ───────────── LOGIN ───────────── -->
+<div id="login-screen" class="screen active">
+  <div class="login-grid-bg"></div>
+  <div class="login-glow"></div>
+
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-icon">📍</div>
+      <div>
+        <div class="logo-text">MUNITRACK</div>
+        <div class="logo-sub">Municipal Works System</div>
+      </div>
+    </div>
+
+    <h1 class="login-title">Worker Login</h1>
+    <p class="login-subtitle">Enter your credentials to access the dashboard</p>
+
+    <div class="field">
+      <label>Email Address</label>
+      <div class="field-wrap">
+        <span class="field-icon">✉</span>
+        <input type="email" id="email" placeholder="worker@municipal.gov.in" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Password</label>
+      <div class="field-wrap">
+        <span class="field-icon">🔒</span>
+        <input type="password" id="password" placeholder="••••••••" />
+      </div>
+    </div>
+
+    <div class="login-options">
+      <label class="remember">
+        <input type="checkbox" checked />
+        Remember me
+      </label>
+      <a href="#" class="forgot">Forgot password?</a>
+    </div>
+
+    <button class="btn-login" onclick="doLogin()">
+      <div class="btn-shimmer"></div>
+      LOG IN →
+    </button>
+
+    <div class="login-footer">
+      🔐 &nbsp;GPS location will be requested after login &nbsp;·&nbsp; Secure connection
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── DASHBOARD ─────────── -->
+<div id="dashboard-screen" class="screen">
+
+  <!-- Top Nav -->
+  <nav class="topnav">
+    <div class="nav-brand">
+      <div class="logo-icon">📍</div>
+      <span>MUNITRACK</span>
+    </div>
+    <div class="nav-right">
+      <div class="nav-time" id="nav-clock">00:00:00</div>
+      <div class="profile-wrap">
+        <div class="avatar notif-dot" onclick="toggleProfile()" id="nav-avatar">—</div>
+        <div class="profile-dropdown" id="profile-dropdown">
+          <div class="profile-dropdown-top">
+            <div class="worker-avatar" id="profile-avatar">—</div>
+            <div>
+              <div class="profile-dropdown-name" id="profile-name">—</div>
+              <div class="profile-dropdown-id" id="profile-email">—</div>
+            </div>
+          </div>
+          <div class="profile-dropdown-body">
+            <div class="profile-info-row">🏗 Civil Works Division</div>
+            <div class="profile-info-row">📍 Nashik Zone 3</div>
+          </div>
+          <div class="profile-dropdown-footer">
+            <button onclick="doLogout()">⬅ Logout</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Body -->
+  <div class="dash-body">
+
+
+
+    <!-- Content -->
+    <main class="dash-content">
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card blue">
+          <div class="stat-label">Tasks Assigned</div>
+          <div class="stat-value" style="color:var(--accent)">5</div>
+          <div class="stat-sub">This week</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Completed</div>
+          <div class="stat-value" style="color:var(--green)">2</div>
+          <div class="stat-sub">On time</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-label">In Progress</div>
+          <div class="stat-value" style="color:var(--orange)">2</div>
+          <div class="stat-sub">Active now</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Attendance</div>
+          <div class="stat-value" style="color:var(--yellow)">94%</div>
+          <div class="stat-sub">This month</div>
+        </div>
+      </div>
+
+      <!-- Tasks -->
+      <div>
+        <div class="section-header">
+          <div class="section-title">📋 Assigned Tasks</div>
+          <div class="filter-row">
+            <button class="filter-btn active">All</button>
+            <button class="filter-btn">Pending</button>
+            <button class="filter-btn">In Progress</button>
+            <button class="filter-btn">Done</button>
+          </div>
+        </div>
+
+        <div class="tasks-list">
+
+          <!-- Task 1 -->
+          <div class="task-card">
+            <div class="task-stripe high"></div>
+            <div class="task-body">
+              <div class="task-top">
+                <span class="task-id">#TASK-0091</span>
+              </div>
+              <div class="task-title">Road Pothole Repair — MG Road Junction</div>
+              <div class="task-desc">Fill and compact 3 identified potholes near MG Road & Station Rd intersection. Apply bitumen patch and mark cones.</div>
+              <div class="task-meta">
+                <div class="meta-chip"><span class="dot">📍</span> MG Road, Nashik</div>
+                <div class="meta-chip"><span class="dot">📅</span> Due: 25 Mar 2026</div>
+                <div class="meta-chip"><span class="dot">👷</span> 2 workers</div>
+              </div>
+              <div class="progress-bar-wrap" style="margin-top:12px">
+                <div class="progress-bar" style="width:65%;background:var(--orange)"></div>
+              </div>
+            </div>
+            <div class="task-right">
+              <span class="priority-badge high">HIGH</span>
+              <span class="status-badge inprogress">In Progress</span>
+              <span style="font-size:12px;color:var(--text-muted)">65%</span>
+            </div>
+          </div>
+
+          <!-- Task 2 -->
+          <div class="task-card">
+            <div class="task-stripe medium"></div>
+            <div class="task-body">
+              <div class="task-top">
+                <span class="task-id">#TASK-0087</span>
+              </div>
+              <div class="task-title">Streetlight Maintenance — Sector 7 Colony</div>
+              <div class="task-desc">Inspect and replace faulty sodium vapour lamps on Sector 7 main road. 8 poles need attention. Report to supervisor after completion.</div>
+              <div class="task-meta">
+                <div class="meta-chip"><span class="dot">📍</span> Sector 7, Nashik</div>
+                <div class="meta-chip"><span class="dot">📅</span> Due: 26 Mar 2026</div>
+                <div class="meta-chip"><span class="dot">👷</span> 1 worker</div>
+              </div>
+              <div class="progress-bar-wrap" style="margin-top:12px">
+                <div class="progress-bar" style="width:20%;background:var(--accent)"></div>
+              </div>
+            </div>
+            <div class="task-right">
+              <span class="priority-badge medium">MEDIUM</span>
+              <span class="status-badge inprogress">In Progress</span>
+              <span style="font-size:12px;color:var(--text-muted)">20%</span>
+            </div>
+          </div>
+
+          <!-- Task 3 -->
+          <div class="task-card">
+            <div class="task-stripe high"></div>
+            <div class="task-body">
+              <div class="task-top">
+                <span class="task-id">#TASK-0083</span>
+              </div>
+              <div class="task-title">Drain Cleaning — Gandhi Nagar Canal</div>
+              <div class="task-desc">Clear blocked storm drain along Gandhi Nagar canal stretch (~200m). Use JCB if needed. Dispose waste at designated site.</div>
+              <div class="task-meta">
+                <div class="meta-chip"><span class="dot">📍</span> Gandhi Nagar, Nashik</div>
+                <div class="meta-chip"><span class="dot">📅</span> Due: 27 Mar 2026</div>
+                <div class="meta-chip"><span class="dot">👷</span> 4 workers</div>
+              </div>
+              <div class="progress-bar-wrap" style="margin-top:12px">
+                <div class="progress-bar" style="width:0%;background:var(--red)"></div>
+              </div>
+            </div>
+            <div class="task-right">
+              <span class="priority-badge high">HIGH</span>
+              <span class="status-badge pending">Pending</span>
+              <span style="font-size:12px;color:var(--text-muted)">0%</span>
+            </div>
+          </div>
+
+          <!-- Task 4 -->
+          <div class="task-card">
+            <div class="task-stripe low"></div>
+            <div class="task-body">
+              <div class="task-top">
+                <span class="task-id">#TASK-0079</span>
+              </div>
+              <div class="task-title">Public Garden Upkeep — Rajiv Udyan</div>
+              <div class="task-desc">Weekly trimming of hedges and grass at Rajiv Udyan. Collect litter and clean pathways. Report damaged benches.</div>
+              <div class="task-meta">
+                <div class="meta-chip"><span class="dot">📍</span> Rajiv Udyan, Nashik</div>
+                <div class="meta-chip"><span class="dot">📅</span> Due: 28 Mar 2026</div>
+                <div class="meta-chip"><span class="dot">👷</span> 3 workers</div>
+              </div>
+              <div class="progress-bar-wrap" style="margin-top:12px">
+                <div class="progress-bar" style="width:100%;background:var(--green)"></div>
+              </div>
+            </div>
+            <div class="task-right">
+              <span class="priority-badge low">LOW</span>
+              <span class="status-badge done">Done</span>
+              <span style="font-size:12px;color:var(--green)">100%</span>
+            </div>
+          </div>
+
+          <!-- Task 5 -->
+          <div class="task-card">
+            <div class="task-stripe low"></div>
+            <div class="task-body">
+              <div class="task-top">
+                <span class="task-id">#TASK-0075</span>
+              </div>
+              <div class="task-title">Footpath Tile Replacement — College Road</div>
+              <div class="task-desc">Replace broken paver tiles on 80m footpath stretch outside D.Y. Patil College. Ensure level surface and safety.</div>
+              <div class="task-meta">
+                <div class="meta-chip"><span class="dot">📍</span> College Road, Nashik</div>
+                <div class="meta-chip"><span class="dot">📅</span> Due: 30 Mar 2026</div>
+                <div class="meta-chip"><span class="dot">👷</span> 2 workers</div>
+              </div>
+              <div class="progress-bar-wrap" style="margin-top:12px">
+                <div class="progress-bar" style="width:100%;background:var(--green)"></div>
+              </div>
+            </div>
+            <div class="task-right">
+              <span class="priority-badge low">LOW</span>
+              <span class="status-badge done">Done</span>
+              <span style="font-size:12px;color:var(--green)">100%</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+  // Profile dropdown
+  function toggleProfile() {
+    document.getElementById('profile-dropdown').classList.toggle('open');
+  }
+
+  document.addEventListener('click', (e) => {
+    const wrap = document.querySelector('.profile-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+      document.getElementById('profile-dropdown')?.classList.remove('open');
+    }
+  });
+
+  // Clock
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('nav-clock').textContent =
+      now.toLocaleTimeString('en-IN', { hour12: false });
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // Login
+  function doLogin() {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value.trim();
+
+    if (!email || !password) {
+      shake();
+      return;
+    }
+
+    // Derive display name & initials from email (e.g. ramesh.kumar@... → Ramesh Kumar)
+    const localPart = email.split('@')[0];
+    const nameParts = localPart.split(/[._\-]/).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase());
+    const displayName = nameParts.join(' ');
+    const initials = nameParts.map(p => p[0]).join('').slice(0, 2).toUpperCase();
+
+    // Populate profile dropdown
+    document.getElementById('nav-avatar').textContent = initials;
+    document.getElementById('profile-avatar').textContent = initials;
+    document.getElementById('profile-name').textContent = displayName;
+    document.getElementById('profile-email').textContent = email;
+
+    document.getElementById('login-screen').classList.remove('active');
+    document.getElementById('dashboard-screen').classList.add('active');
+  }
+
+  function shake() {
+    const card = document.querySelector('.login-card');
+    card.style.animation = 'none';
+    card.offsetHeight;
+    card.style.animation = 'shake .4s ease';
+  }
+
+  // Listen for Enter key on login
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && document.getElementById('login-screen').classList.contains('active')) {
+      doLogin();
+    }
+  });
+
+  // Logout
+  function doLogout() {
+    document.getElementById('dashboard-screen').classList.remove('active');
+    document.getElementById('login-screen').classList.add('active');
+    document.getElementById('email').value = '';
+    document.getElementById('password').value = '';
+  }
+
+  // Check In
+  function checkIn() {
+    const btn = document.querySelector('.btn-checkin');
+    btn.style.background = 'var(--green-dim)';
+    btn.textContent = '✅ Checked In!';
+    btn.disabled = true;
+  }
+
+  // Filter buttons
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // Nav items
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+    });
+  });
+
+  // Shake keyframe
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes shake {
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-8px)}
+      40%{transform:translateX(8px)}
+      60%{transform:translateX(-6px)}
+      80%{transform:translateX(6px)}
+    }
+  `;
+  document.head.appendChild(style);
+</script>
+</body>
+</html>
