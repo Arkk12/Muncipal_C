@@ -399,7 +399,17 @@
 
   <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs, query, orderBy, updateDoc, doc, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { 
+    getFirestore, 
+    collection, 
+    addDoc, 
+    getDocs, 
+    query, 
+    orderBy, 
+    updateDoc, 
+    doc, 
+    where 
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCiwULO00txSRfKrGDtK0GkxloFe8yjTTo",
@@ -414,20 +424,117 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  window.db = db;
-  window.addDoc = addDoc;
-  window.collection = collection;
-  window.getDocs = getDocs;
-  window.query = query;
-  window.orderBy = orderBy;
-  window.updateDoc = updateDoc;
-  window.doc = doc;
-  window.where = where;
+  // ====================== ADD EMPLOYEE MODAL ======================
+  const overlay = document.getElementById('overlay');
+  const addEmployeeBtn = document.getElementById('addEmployeeBtn');
+  const closeBtn = document.getElementById('closeBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const submitBtn = document.getElementById('submitBtn');
 
-  // ==================== ADD EMPLOYEE (unchanged) ====================
-  // ... (your existing add employee modal code stays exactly the same)
+  const fName = document.getElementById('f-name');
+  const fEmail = document.getElementById('f-email');
+  const fPass = document.getElementById('f-pass');
+  const fDept = document.getElementById('f-dept');
+  const eyeBtn = document.getElementById('eyeBtn');
 
-  // ==================== ASSIGN WORKERS MODAL ====================
+  // Open modal when "Add Employees" button is clicked
+  addEmployeeBtn.addEventListener('click', () => {
+    overlay.classList.add('open');
+    clearForm();
+  });
+
+  // Close modal
+  closeBtn.addEventListener('click', () => overlay.classList.remove('open'));
+  cancelBtn.addEventListener('click', () => overlay.classList.remove('open'));
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+
+  // Password visibility toggle
+  eyeBtn.addEventListener('click', () => {
+    if (fPass.type === 'password') {
+      fPass.type = 'text';
+      eyeBtn.textContent = '🙈';
+    } else {
+      fPass.type = 'password';
+      eyeBtn.textContent = '👁';
+    }
+  });
+
+  function clearForm() {
+    fName.value = '';
+    fEmail.value = '';
+    fPass.value = '';
+    fDept.value = '';
+    document.querySelectorAll('.err-txt').forEach(el => el.style.display = 'none');
+  }
+
+  // Submit new employee
+  submitBtn.addEventListener('click', async () => {
+    let valid = true;
+
+    // Basic validation
+    if (!fName.value.trim()) {
+      document.getElementById('g-name').querySelector('.err-txt').style.display = 'block';
+      valid = false;
+    }
+    if (!fEmail.value.includes('@')) {
+      document.getElementById('g-email').querySelector('.err-txt').style.display = 'block';
+      valid = false;
+    }
+    if (fPass.value.length < 6) {
+      document.getElementById('g-pass').querySelector('.err-txt').style.display = 'block';
+      valid = false;
+    }
+    if (!fDept.value) {
+      document.getElementById('g-dept').querySelector('.err-txt').style.display = 'block';
+      valid = false;
+    }
+
+    if (!valid) return;
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Adding...`;
+
+    try {
+      await addDoc(collection(db, "employees"), {
+        fullName: fName.value.trim(),
+        email: fEmail.value.trim().toLowerCase(),
+        department: fDept.value,
+        password: fPass.value,           // Note: In production, use Firebase Auth instead
+        createdAt: new Date().toISOString(),   // Fixed: using new Date()
+        addedBy: "Admin"
+      });
+
+      showToast("✅ Employee Added!", `${fName.value} has been registered successfully.`);
+      overlay.classList.remove('open');
+      clearForm();
+
+      // Refresh employees list in Assign modal if it's open
+      if (document.getElementById('assignOverlay').classList.contains('open')) {
+        loadEmployees();
+      }
+
+    } catch (error) {
+      console.error(error);
+      alert("Failed to add employee: " + error.message);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `Add Employee`;
+    }
+  });
+
+  // Toast notification
+  function showToast(title, message) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = message;
+    toast.querySelector('strong').textContent = title;
+    toast.classList.add('show');
+
+    setTimeout(() => toast.classList.remove('show'), 4000);
+  }
+
+  // ====================== ASSIGN WORKERS MODAL (Your existing code) ======================
   let selectedWorker = null;
   let selectedWorkerEmail = null;
 
@@ -448,9 +555,10 @@
 
   closeAssignBtn.addEventListener('click', () => assignOverlay.classList.remove('open'));
   cancelAssignBtn.addEventListener('click', () => assignOverlay.classList.remove('open'));
-  assignOverlay.addEventListener('click', e => { if (e.target === assignOverlay) assignOverlay.classList.remove('open'); });
+  assignOverlay.addEventListener('click', e => { 
+    if (e.target === assignOverlay) assignOverlay.classList.remove('open'); 
+  });
 
-  // Load pending complaints into dropdown
   async function loadPendingComplaints() {
     complaintSelect.innerHTML = `<option value="">Loading complaints...</option>`;
     try {
@@ -470,7 +578,6 @@
     }
   }
 
-  // Load employees and make rows clickable
   async function loadEmployees() {
     const tbody = document.getElementById('employeesTableBody');
     tbody.innerHTML = `<tr><td colspan="4" class="py-12 text-center"><i class="fas fa-spinner fa-spin"></i><p>Loading workers...</p></td></tr>`;
@@ -498,7 +605,6 @@
         `;
 
         row.addEventListener('click', () => {
-          // Highlight selected row
           document.querySelectorAll('#employeesTableBody tr').forEach(r => r.style.background = '');
           row.style.background = '#dbeafe';
 
@@ -515,7 +621,6 @@
     }
   }
 
-  // Assign button click
   assignBtn.addEventListener('click', async () => {
     const complaintDocId = complaintSelect.value;
     if (!complaintDocId || !selectedWorkerEmail) {
@@ -525,22 +630,20 @@
 
     try {
       await updateDoc(doc(db, "complaints", complaintDocId), {
+        assignedTo: selectedWorkerEmail,           // ← Important for worker dashboard
         assignedWorkerName: selectedWorker,
-        assignedWorkerEmail: selectedWorkerEmail,
         status: "in-progress"
       });
 
-      alert(`✅ ${selectedWorker} successfully assigned to the complaint!`);
+      alert(`✅ ${selectedWorker} successfully assigned!`);
       assignOverlay.classList.remove('open');
-
-      // Refresh complaint table
-      loadComplaints();
+      loadComplaints();   // refresh complaints table
     } catch (error) {
       alert("Assignment failed: " + error.message);
     }
   });
 
-  // ==================== COMPLAINTS TABLE (updated to show assigned worker) ====================
+  // ====================== COMPLAINTS TABLE ======================
   async function loadComplaints() {
     const tbody = document.getElementById('complaintsTableBody');
     tbody.innerHTML = `<tr><td colspan="8" class="py-20 text-center"><i class="fas fa-spinner fa-spin text-4xl"></i><p>Loading complaints...</p></td></tr>`;
@@ -548,7 +651,6 @@
     try {
       const q = query(collection(db, "complaints"), orderBy("date", "desc"));
       const snapshot = await getDocs(q);
-
       tbody.innerHTML = '';
 
       if (snapshot.empty) {
@@ -558,7 +660,7 @@
 
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
-        const assigned = data.assignedWorkerName ? data.assignedWorkerName : "Not Assigned";
+        const assigned = data.assignedWorkerName || data.assignedTo || "Not Assigned";
 
         let statusHTML = '';
         if (data.status === 'pending') statusHTML = `<span class="bg-yellow-100 text-yellow-700 px-5 py-1 rounded-full text-xs">Pending</span>`;
@@ -582,6 +684,7 @@
       });
     } catch (e) {
       console.error(e);
+      tbody.innerHTML = `<tr><td colspan="8" class="py-20 text-red-600 text-center">Error loading complaints</td></tr>`;
     }
   }
 
@@ -590,7 +693,7 @@
     loadComplaints();
   };
 
-  // Load everything on page start
+  // Load complaints when page loads
   document.addEventListener('DOMContentLoaded', () => {
     loadComplaints();
   });
