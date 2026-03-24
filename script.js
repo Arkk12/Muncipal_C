@@ -1,7 +1,10 @@
 // Global variables
 // Note: Local state is removed. All operations now rely on fetching from the server.
 let complaintCounter = parseInt(localStorage.getItem('complaintCounter')) || 1; // Kept only for legacy or if still used elsewhere.
-
+let selectedLat = null;
+let selectedLng = null;
+let map;
+let marker;
 // Admin authentication variables
 // DOM elements
 const navLinks = document.querySelectorAll('.nav-link');
@@ -49,49 +52,32 @@ async function fetchComplaints() {
     }
 }
 
-
-/*async function handleComplaintSubmission(e) {
-    e.preventDefault();
-
-    const form = document.getElementById("complaintForm");
-
-    const data = {
-        fullName: form.fullName.value,
-        email: form.email.value,
-        phone: form.phone.value,
-        category: form.category.value,
-        address: form.address.value,
-        description: form.description.value,
-        date: new Date().toISOString(),
-        status: "pending"
-    };
-
-    try {
-        const docRef = await addDoc(collection(db, "complaints"), data);
-
-        document.getElementById("generatedComplaintId").textContent = docRef.id;
-        showModal();
-        form.reset();
-
-    } catch (error) {
-        alert("Error saving data: " + error.message);
-    }
-}*/
 async function handleComplaintSubmission(e) {
     e.preventDefault();
 
     const form = document.getElementById("complaintForm");
+    const file = document.getElementById("fileUpload").files[0];
 
     try {
-        // 🔥 STEP 1: Get all complaints count
+        // 🔥 STEP 1: Generate Complaint ID
         const querySnapshot = await getDocs(collection(db, "complaints"));
         const count = querySnapshot.size + 1;
-
-        // 🔥 STEP 2: Create custom ID
         const year = new Date().getFullYear();
         const complaintId = `MC${year}${String(count).padStart(3, '0')}`;
 
-        // 🔥 STEP 3: Prepare data
+        // 🔥 STEP 2: Convert image to Base64
+        let fileData = "";
+
+        if (file) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+
+            fileData = await new Promise((resolve) => {
+                reader.onload = () => resolve(reader.result);
+            });
+        }
+
+        // 🔥 STEP 3: Save data in Firestore
         const data = {
             complaintId: complaintId,
             fullName: form.fullName.value,
@@ -100,21 +86,25 @@ async function handleComplaintSubmission(e) {
             category: form.category.value,
             address: form.address.value,
             description: form.description.value,
+            fileData: fileData, // ✅ image stored here
+            location: {
+                lat: selectedLat,
+                lng: selectedLng
+                },
             date: new Date().toISOString(),
-            status: "pending"
+            status: "pending",
         };
 
-        // 🔥 STEP 4: Save in Firebase
         await addDoc(collection(db, "complaints"), data);
 
-        // 🔥 STEP 5: Show YOUR ID (not Firebase one)
+        // 🔥 STEP 4: Show ID
         document.getElementById("generatedComplaintId").textContent = complaintId;
 
         showModal();
         form.reset();
 
     } catch (error) {
-        alert("Error saving data: " + error.message);
+        alert("Error: " + error.message);
     }
 }
 // ... (rest of script.js remains the same)
@@ -152,10 +142,22 @@ async function trackComplaint() {
                     <p><strong>Name:</strong> ${complaint.fullName}</p>
                     <p><strong>Category:</strong> ${complaint.category}</p>
                     <p><strong>Description:</strong> ${complaint.description}</p>
+                    ${complaint.fileData ? `<img src="${complaint.fileData}" width="200"/>` : ""}
                     <p><strong>Date Submitted:</strong> ${new Date(complaint.date).toLocaleDateString()}</p>
                     <div style="margin-top: 1rem;">
                         <strong>Status:</strong> ${status.toUpperCase()}
                     </div>
+                    ${complaint.location ? `
+                    <p><strong>Location:</strong></p>
+                    <iframe
+                        width="100%"
+                        height="250"
+                        style="border:0"
+                        loading="lazy"
+                        allowfullscreen
+                        src="https://www.google.com/maps?q=${complaint.location.lat},${complaint.location.lng}&output=embed">
+                    </iframe>
+                ` : ""}
                 </div>
             `;
         } else {
@@ -174,6 +176,7 @@ async function trackComplaint() {
             </div>
         `;
     }
+    
 }
 
 
@@ -447,4 +450,32 @@ function updateNavigationState() {
             adminNavLink.style.color = 'white';
         }
     }
+}
+
+function initMap() {
+    const defaultLocation = { lat: 18.5204, lng: 73.8567 }; // Pune (you can change)
+
+    map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 12,
+        center: defaultLocation,
+    });
+
+    map.addListener("click", function (event) {
+        const clickedLocation = event.latLng;
+
+        selectedLat = clickedLocation.lat();
+        selectedLng = clickedLocation.lng();
+
+        // Remove old marker
+        if (marker) marker.setMap(null);
+
+        // Add new marker
+        marker = new google.maps.Marker({
+            position: clickedLocation,
+            map: map,
+        });
+
+        document.getElementById("selectedLocation").innerText =
+            `Selected: ${selectedLat.toFixed(5)}, ${selectedLng.toFixed(5)}`;
+    });
 }

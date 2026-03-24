@@ -133,6 +133,11 @@
                             <input type="file" id="fileUpload" name="fileUpload" accept="image/*,video/*">
                             <small>Maximum file size: 5MB. Supported formats: JPG, PNG, MP4</small>
                         </div>
+                        <div class="form-group full-width">
+                            <label>Select Location *</label>
+                                <div id="map" style="height: 300px; width: 100%;"></div>
+                            <p id="selectedLocation">No location selected</p>
+                        </div>
                     </div>
                     
                     <div class="form-actions">
@@ -391,5 +396,6 @@
   window.where = where;
 </script>
 <script src="script.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCCS7t-8Y53wbwbfrT3GFdc1gVIzMo7LmE&callback=initMap" async defer></script>
 </body>
 </html>
