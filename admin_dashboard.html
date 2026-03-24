@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Admin Dashboard</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th><th>Title</th><th>Location</th><th>Status</th><th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for c in complaints %}
+        <tr>
+            <td>{{ c.id }}</td>
+            <td>{{ c.title }}</td>
+            <td>{{ c.location }}</td>
+            <td><span class="badge bg-{{ 'success' if c.status=='Work Done' else 'warning' }}">{{ c.status }}</span></td>
+            <td>
+                {% if c.status == 'Pending' %}
+                <form method="POST" action="{{ url_for('assign_task', comp_id=c.id) }}">
+                    <input type="text" name="worker" placeholder="Worker Name" required class="form-control d-inline w-50">
+                    <button type="submit" class="btn btn-sm btn-success">Assign</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

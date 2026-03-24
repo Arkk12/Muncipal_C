@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Worker Dashboard - Assigned Tasks</h2>
+
+{% if complaints %}
+    {% for c in complaints %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">{{ c.title }}</h5>
+            <p><strong>Location:</strong> {{ c.location }}</p>
+            <p><strong>Status:</strong> <span class="badge bg-warning">{{ c.status }}</span></p>
+            
+            <img src="{{ url_for('uploaded_file', filename=c.before_photo) }}" 
+                 width="300" class="img-thumbnail mb-3" alt="Before Photo">
+
+            <form method="POST" action="{{ url_for('complete_work', comp_id=c.id) }}" 
+                  enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label class="form-label">Upload After Photo (Work Done)</label>
+                    <input type="file" name="after_photo" class="form-control" accept="image/*" required>
+                </div>
+                <button type="submit" class="btn btn-success">✅ Mark as Completed</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="alert alert-info">
+        No tasks assigned yet. Check back later.
+    </div>
+{% endif %}
+
+{% endblock %}
