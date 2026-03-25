@@ -1,8 +1,950 @@
-{% extends "base.html" %}
-{% block content %}
-<div class="text-center">
-    <h1 class="text-success">✅ Complaint Submitted Successfully!</h1>
-    <p>Your complaint has been sent to the admin.</p>
-    <a href="/" class="btn btn-primary">Go Home</a>
-</div>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Municipal Corp - Admin Dashboard</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
+  
+  <!-- Google Maps -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCCS7t-8Y53wbwbfrT3GFdc1gVIzMo7LmE&libraries=geometry"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+    body { font-family: 'Poppins', system-ui, sans-serif; }
+    
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.6); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem; }
+    .overlay.open { display: flex; }
+
+    .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 500px; box-shadow: 0 24px 64px rgba(0,0,0,.25); overflow: hidden; }
+    .modal-head { background: linear-gradient(135deg, #1a3a8f 0%, #2351c8 100%); padding: 1.25rem 1.5rem; color: white; display: flex; align-items: center; justify-content: space-between; }
+    .modal-body { padding: 1.8rem 1.5rem; }
+    .modal-foot { padding: 1rem 1.5rem 1.5rem; display: flex; justify-content: flex-end; gap: .8rem; }
+
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #fff; border-radius: 12px; padding: 1rem 1.2rem; display: flex; align-items: center; gap: .8rem; box-shadow: 0 10px 30px rgba(0,0,0,.2); border-left: 5px solid #22c55e; transform: translateX(120%); transition: transform .4s; z-index: 10000; }
+    .toast.show { transform: translateX(0); }
+    .toast.error { border-left-color: #ef4444; }
+
+    #workersMap { height: 420px; width: 100%; border-radius: 16px; }
+
+    /* ── GEOFENCE ATTENDANCE STYLES ── */
+    .worker-status-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      margin-bottom: 8px;
+      transition: background .2s;
+      font-size: 13px;
+    }
+    .worker-status-row:hover { background: #f8faff; }
+
+    .status-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+    .status-dot.present  { background: #22c55e; box-shadow: 0 0 6px #22c55e88; }
+    .status-dot.grace    { background: #f59e0b; box-shadow: 0 0 6px #f59e0b88; animation: blink 1s infinite; }
+    .status-dot.absent   { background: #ef4444; box-shadow: 0 0 6px #ef444488; }
+    .status-dot.unknown  { background: #9ca3af; }
+
+    @keyframes blink { 50% { opacity: .4; } }
+
+    .countdown-bar {
+      height: 4px; border-radius: 2px;
+      background: #fde68a;
+      transition: width 1s linear;
+    }
+    .countdown-wrap {
+      width: 100%; background: #f3f4f6;
+      border-radius: 2px; overflow: hidden; margin-top: 4px;
+    }
+
+    .attendance-pill {
+      font-size: 11px; font-weight: 600; letter-spacing: .5px;
+      padding: 3px 10px; border-radius: 20px;
+      text-transform: uppercase;
+    }
+    .attendance-pill.present  { background: #dcfce7; color: #15803d; }
+    .attendance-pill.grace    { background: #fef3c7; color: #b45309; }
+    .attendance-pill.absent   { background: #fee2e2; color: #b91c1c; }
+    .attendance-pill.unknown  { background: #f1f5f9; color: #64748b; }
+
+    /* Live badge pulse */
+    @keyframes livePulse {
+      0%,100% { box-shadow: 0 0 0 0 #22c55e66; }
+      50%      { box-shadow: 0 0 0 6px #22c55e00; }
+    }
+    .live-badge { animation: livePulse 2s infinite; }
+
+    /* Stats cards */
+    .att-stat-card {
+      background: white; border-radius: 14px; padding: 16px 20px;
+      border: 1px solid #e5e7eb;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .att-stat-val { font-size: 28px; font-weight: 700; line-height: 1; }
+    .att-stat-label { font-size: 12px; color: #6b7280; }
+  </style>
+</head>
+<body class="bg-gray-50">
+
+  <!-- Header -->
+  <header class="bg-blue-600 text-white py-4">
+    <div class="max-w-7xl mx-auto px-6 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-yellow-400 rounded-lg flex items-center justify-center text-3xl">🏛️</div>
+        <span class="text-2xl font-semibold">Municipal Corp</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="bg-blue-500 px-6 py-2 rounded-3xl flex items-center gap-3">
+          <i class="fas fa-user-circle text-3xl"></i>
+          <div class="text-sm">
+            <div class="font-medium">Admin</div>
+            <div class="text-blue-200 text-xs -mt-0.5">Logged In</div>
+          </div>
+        </div>
+        <button onclick="alert('Logged out successfully!')" class="bg-white text-blue-600 hover:bg-blue-50 px-6 py-2.5 rounded-3xl font-medium flex items-center gap-2">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation -->
+  <div class="max-w-7xl mx-auto px-6 pt-6 pb-4">
+    <div class="flex gap-4">
+      <button id="addEmployeeBtn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-3xl font-medium flex items-center justify-center gap-3">
+        <i class="fas fa-plus text-xl"></i> Add Employees
+      </button>
+      <button onclick="openAssignModal()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-3xl font-medium flex items-center justify-center gap-3">
+        <i class="fas fa-user-check text-xl"></i> Assign Workers
+      </button>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-6 pb-10">
+    <div class="flex justify-start items-center mb-8">
+      <p class="text-gray-600 text-lg">Welcome, <span class="font-semibold text-gray-800">Admin</span></p>
+    </div>
+
+    <div class="grid grid-cols-12 gap-8">
+
+      <!-- ══════════════════════════════════════════════ -->
+      <!-- GEOFENCE ATTENDANCE PANEL                      -->
+      <!-- ══════════════════════════════════════════════ -->
+      <div class="col-span-12 bg-white rounded-3xl shadow p-6">
+
+        <!-- Header row -->
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <h2 class="text-2xl font-semibold flex items-center gap-3">
+            <i class="fas fa-map-marker-alt text-blue-600"></i>
+            Live Geofence Attendance
+          </h2>
+          <div class="flex items-center gap-3">
+            <span class="live-badge bg-emerald-500 text-white text-xs font-semibold px-4 py-1.5 rounded-3xl flex items-center gap-2">
+              <i class="fas fa-circle text-xs"></i> Live · Auto-checks every 8s
+            </span>
+            <span class="text-xs text-gray-400 bg-gray-100 px-3 py-1.5 rounded-2xl">
+              ⏱ Absent if outside ≥ 30 min
+            </span>
+          </div>
+        </div>
+
+        <!-- Summary stat cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6" id="att-summary-cards">
+          <div class="att-stat-card">
+            <div class="att-stat-val text-blue-600" id="att-total">—</div>
+            <div class="att-stat-label">Total Workers</div>
+          </div>
+          <div class="att-stat-card">
+            <div class="att-stat-val text-emerald-600" id="att-present">—</div>
+            <div class="att-stat-label">Present (in zone)</div>
+          </div>
+          <div class="att-stat-card">
+            <div class="att-stat-val text-amber-500" id="att-grace">—</div>
+            <div class="att-stat-label">Grace Period</div>
+          </div>
+          <div class="att-stat-card">
+            <div class="att-stat-val text-red-600" id="att-absent">—</div>
+            <div class="att-stat-label">Absent (30 min+)</div>
+          </div>
+        </div>
+
+        <!-- Two-column layout: map + live worker list -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          <!-- Map -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm font-semibold text-gray-700">Workers Live Map · 100m Geofence</span>
+              <span class="text-xs text-gray-400" id="map-last-updated">Updating…</span>
+            </div>
+            <div id="workersMap"></div>
+          </div>
+
+          <!-- Live worker status list -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm font-semibold text-gray-700">Worker Status</span>
+              <button onclick="exportAttendanceCSV()" class="text-xs text-blue-600 border border-blue-200 px-3 py-1 rounded-lg hover:bg-blue-50">
+                <i class="fas fa-download mr-1"></i> Export CSV
+              </button>
+            </div>
+            <div id="worker-status-list" class="max-h-96 overflow-y-auto pr-1">
+              <div class="text-center text-gray-400 text-sm py-12">
+                <i class="fas fa-satellite-dish text-3xl mb-3 block"></i>
+                Loading worker locations…
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Geofence rule info strip -->
+        <div class="mt-5 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-3 flex flex-wrap items-center gap-4 text-sm text-amber-800">
+          <i class="fas fa-info-circle text-amber-500"></i>
+          <span><strong>Attendance Rule:</strong> Worker is marked <span class="font-semibold text-emerald-700">Present</span> when inside the 100m geofence.
+          If they leave, a <span class="font-semibold text-amber-700">30-minute grace timer</span> starts.
+          Returning before 30 min resets to Present. Staying outside ≥ 30 min marks them <span class="font-semibold text-red-700">Absent</span> automatically.</span>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════ -->
+      <!-- ATTENDANCE LOGS TABLE                          -->
+      <!-- ══════════════════════════════════════════════ -->
+      <div class="col-span-12 lg:col-span-7 bg-white rounded-3xl shadow p-6">
+        <h2 class="text-2xl font-semibold mb-6 flex items-center gap-3">
+          <i class="fas fa-clock text-blue-600"></i> Attendance Logs
+        </h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b">
+                <th class="text-left py-4 font-medium text-gray-600">Worker Name</th>
+                <th class="text-left py-4 font-medium text-gray-600">Email</th>
+                <th class="text-left py-4 font-medium text-gray-600">Date</th>
+                <th class="text-left py-4 font-medium text-gray-600">Check-in</th>
+                <th class="text-left py-4 font-medium text-gray-600">Exit Time</th>
+                <th class="text-left py-4 font-medium text-gray-600">Status</th>
+              </tr>
+            </thead>
+            <tbody id="attendanceBody" class="divide-y"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Workers Live Maps (legacy smaller panel) -->
+      <div class="col-span-12 lg:col-span-5 bg-white rounded-3xl shadow p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-semibold">Geofence Legend</h2>
+        </div>
+        <div class="space-y-3 text-sm">
+          <div class="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+            <span class="status-dot present"></span>
+            <div>
+              <div class="font-semibold text-emerald-700">Present</div>
+              <div class="text-xs text-gray-500">Worker is inside the 100m geofence boundary</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 p-3 bg-amber-50 rounded-xl border border-amber-200">
+            <span class="status-dot grace"></span>
+            <div>
+              <div class="font-semibold text-amber-700">Grace Period (0–30 min)</div>
+              <div class="text-xs text-gray-500">Outside zone — countdown timer active. Returns → Present.</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 p-3 bg-red-50 rounded-xl border border-red-200">
+            <span class="status-dot absent"></span>
+            <div>
+              <div class="font-semibold text-red-700">Absent (≥30 min outside)</div>
+              <div class="text-xs text-gray-500">Auto-marked absent. Logged with exit timestamp.</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+            <span class="status-dot unknown"></span>
+            <div>
+              <div class="font-semibold text-gray-600">No GPS Signal</div>
+              <div class="text-xs text-gray-500">Location not received yet or worker offline.</div>
+            </div>
+          </div>
+          <div class="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200 text-xs text-blue-800 space-y-1">
+            <div class="font-semibold mb-2">📡 Map Markers</div>
+            <div>🔵 Blue dot — Worker inside geofence (Present)</div>
+            <div>🟠 Orange dot — Worker in grace period</div>
+            <div>🔴 Red dot — Worker absent (30+ min outside)</div>
+            <div>⭕ Red circle — 100m geofence boundary</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Complaints Table -->
+      <div class="col-span-12 bg-white rounded-3xl shadow p-6">
+        <h2 class="text-2xl font-semibold mb-6">Complaint Reports</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b">
+                <th class="text-left py-4 px-4 font-medium text-gray-600">ID</th>
+                <th class="text-left py-4 px-4 font-medium text-gray-600">Citizen Name</th>
+                <th class="text-left py-4 px-4 font-medium text-gray-600">Category</th>
+                <th class="text-left py-4 px-4 font-medium text-gray-600">Status</th>
+                <th class="text-left py-4 px-4 font-medium text-gray-600">Assigned Officer</th>
+                <th class="text-left py-4 px-4 font-medium text-gray-600">Date</th>
+                <th class="text-left py-4 px-4 font-medium text-gray-600">Location</th>
+                <th class="text-left py-4 px-4 font-medium text-gray-600">Action</th>
+              </tr>
+            </thead>
+            <tbody id="complaintsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Employee Modal -->
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <div class="modal-head">
+        <h2><i class="fas fa-user-plus"></i> Add New Employee</h2>
+        <button class="text-white text-2xl" id="closeBtn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="col-span-2">
+            <label class="block text-xs font-semibold mb-1">Full Name</label>
+            <input type="text" id="f-name" class="w-full p-3 border border-gray-300 rounded-xl" placeholder="Rajesh Kumar">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1">Email</label>
+            <input type="email" id="f-email" class="w-full p-3 border border-gray-300 rounded-xl" placeholder="rajesh@muni.in">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1">Password</label>
+            <input type="password" id="f-pass" class="w-full p-3 border border-gray-300 rounded-xl" placeholder="Min 6 chars">
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs font-semibold mb-1">Department</label>
+            <select id="f-dept" class="w-full p-3 border border-gray-300 rounded-xl">
+              <option value="">-- Select --</option>
+              <option value="Road">Road Department</option>
+              <option value="Water">Water Department</option>
+              <option value="Waste">Waste Management</option>
+              <option value="Drainage">Drainage</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="px-6 py-2.5 bg-gray-200 rounded-xl" id="cancelBtn">Cancel</button>
+        <button class="px-6 py-2.5 bg-blue-600 text-white rounded-xl" id="submitBtn">Add Employee</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assign Workers Modal -->
+  <div class="overlay" id="assignOverlay">
+    <div class="modal" style="max-width:820px;">
+      <div class="modal-head">
+        <h2><i class="fas fa-user-check"></i> Assign Worker to Complaint</h2>
+        <button class="text-white text-2xl" id="closeAssignBtn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-6">
+          <label class="block text-sm font-semibold mb-2">Select Complaint</label>
+          <select id="complaintSelect" class="w-full p-3 border border-gray-300 rounded-xl"></select>
+        </div>
+        <p class="text-sm font-medium mb-3">Click worker to select</p>
+        <div class="max-h-80 overflow-auto border rounded-xl">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-100 sticky top-0">
+              <tr><th class="py-3 px-6 text-left">Name</th><th class="py-3 px-6 text-left">Email</th><th class="py-3 px-6 text-left">Department</th></tr>
+            </thead>
+            <tbody id="employeesTableBody" class="cursor-pointer"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="px-6 py-2.5 bg-gray-200 rounded-xl" id="cancelAssignBtn">Cancel</button>
+        <button id="assignBtn" class="px-6 py-2.5 bg-blue-600 text-white rounded-xl" disabled>Assign Selected Worker</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    <div>
+      <strong id="toastTitle">Success</strong>
+      <div id="toastMsg" style="font-size:12px;color:#666;margin-top:2px;"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { 
+      getFirestore, collection, getDocs, addDoc, updateDoc, doc,
+      query, orderBy, where, setDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCiwULO00txSRfKrGDtK0GkxloFe8yjTTo",
+      authDomain: "munitrack-185a9.firebaseapp.com",
+      projectId: "munitrack-185a9",
+      storageBucket: "munitrack-185a9.firebasestorage.app",
+      messagingSenderId: "279869593227",
+      appId: "1:279869593227:web:55a93f703a7decff0b668e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
+
+    let map;
+    let workerMarkers   = {};
+    let workerGeofences = {};
+    let workerInfoWindows = {};
+
+    // ══════════════════════════════════════════════════════════════
+    // GEOFENCE ATTENDANCE ENGINE
+    // Key: workerEmail → { status, exitTime, lastSeen, position }
+    // status: 'present' | 'grace' | 'absent' | 'unknown'
+    // ══════════════════════════════════════════════════════════════
+    const GEOFENCE_RADIUS_M = 100;      // metres
+    const ABSENT_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes in ms
+
+    // State map: persists across polling cycles
+    const workerState = {};   // email → { status, exitTime, markedAbsentAt, name, lat, lng, lastSeen }
+
+    function getGeofenceCenter(complaint) {
+      // Returns the geofence centre for a complaint, or null
+      if (complaint && complaint.location && complaint.location.lat)
+        return new google.maps.LatLng(complaint.location.lat, complaint.location.lng);
+      return null;
+    }
+
+    function distanceBetween(lat1, lng1, lat2, lng2) {
+      return google.maps.geometry.spherical.computeDistanceBetween(
+        new google.maps.LatLng(lat1, lng1),
+        new google.maps.LatLng(lat2, lng2)
+      );
+    }
+
+    // ─── CORE: update a single worker's attendance state ──────────
+    async function updateWorkerState(workerEmail, workerName, workerLat, workerLng, geofenceCenters) {
+      const now = Date.now();
+      let state = workerState[workerEmail] || { status: 'unknown', exitTime: null, markedAbsentAt: null };
+
+      // Check if worker is inside ANY assigned geofence
+      let insideAny = false;
+      for (const center of geofenceCenters) {
+        const dist = distanceBetween(workerLat, workerLng, center.lat(), center.lng());
+        if (dist <= GEOFENCE_RADIUS_M) { insideAny = true; break; }
+      }
+
+      const prevStatus = state.status;
+
+      if (insideAny) {
+        // Worker is INSIDE geofence → mark Present, clear timers
+        if (state.status !== 'present') {
+          // Returned inside — log re-entry if they were in grace/absent
+          if (state.status === 'grace' || state.status === 'absent') {
+            await logAttendanceEvent(workerEmail, workerName, 'returned', state.exitTime);
+          }
+          state.exitTime       = null;
+          state.markedAbsentAt = null;
+        }
+        state.status = 'present';
+
+      } else {
+        // Worker is OUTSIDE geofence
+        if (state.status === 'present' || state.status === 'unknown') {
+          // Just left — start grace timer
+          state.exitTime       = now;
+          state.markedAbsentAt = null;
+          state.status         = 'grace';
+
+        } else if (state.status === 'grace') {
+          const outsideMs = now - state.exitTime;
+          if (outsideMs >= ABSENT_THRESHOLD_MS) {
+            // Grace period expired → mark ABSENT
+            state.status         = 'absent';
+            state.markedAbsentAt = now;
+            await markWorkerAbsent(workerEmail, workerName, state.exitTime);
+          }
+          // else: still in grace, keep timer running
+
+        }
+        // If already 'absent', stay absent until they return
+      }
+
+      state.name     = workerName;
+      state.lat      = workerLat;
+      state.lng      = workerLng;
+      state.lastSeen = now;
+      workerState[workerEmail] = state;
+
+      return state;
+    }
+
+    // ─── Write absent record to Firestore ─────────────────────────
+    async function markWorkerAbsent(email, name, exitTimestamp) {
+      try {
+        const logId  = `${email.replace(/[^a-zA-Z0-9]/g,'_')}_${Date.now()}`;
+        await setDoc(doc(db, "attendance_logs", logId), {
+          workerName:  name,
+          email:       email,
+          date:        new Date().toISOString().split('T')[0],
+          checkInTime: '—',
+          exitTime:    new Date(exitTimestamp).toLocaleTimeString('en-IN'),
+          absentAt:    new Date().toLocaleTimeString('en-IN'),
+          status:      'Absent',
+          reason:      'Outside geofence > 30 minutes',
+          timestamp:   new Date().toISOString()
+        }, { merge: true });
+
+        showToast('⚠️ Absent Marked', `${name} has been outside the zone for 30+ minutes.`, true);
+        loadAttendanceLogs();
+      } catch (e) { console.error('markWorkerAbsent error', e); }
+    }
+
+    // ─── Log present / re-entry events ────────────────────────────
+    async function logAttendanceEvent(email, name, event, exitTimestamp) {
+      try {
+        const isPresent = event === 'present' || event === 'returned';
+        const logId     = `${email.replace(/[^a-zA-Z0-9]/g,'_')}_${Date.now()}`;
+        await setDoc(doc(db, "attendance_logs", logId), {
+          workerName:  name,
+          email:       email,
+          date:        new Date().toISOString().split('T')[0],
+          checkInTime: new Date().toLocaleTimeString('en-IN'),
+          exitTime:    exitTimestamp ? new Date(exitTimestamp).toLocaleTimeString('en-IN') : '—',
+          status:      isPresent ? 'Present' : 'Absent',
+          event:       event,
+          timestamp:   new Date().toISOString()
+        }, { merge: true });
+      } catch (e) { console.error('logAttendanceEvent error', e); }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // MAP INIT & POLLING
+    // ══════════════════════════════════════════════════════════════
+    function initWorkersMap() {
+      map = new google.maps.Map(document.getElementById("workersMap"), {
+        center: { lat: 19.0760, lng: 72.8777 },
+        zoom: 10,
+      });
+      pollWorkersAndAttendance();
+      setInterval(pollWorkersAndAttendance, 8000);
+    }
+
+    async function pollWorkersAndAttendance() {
+      try {
+        const [workersSnap, complaintsSnap] = await Promise.all([
+          getDocs(collection(db, "worker_locations")),
+          getDocs(query(collection(db, "complaints"), where("status", "in", ["pending","in-progress"])))
+        ]);
+
+        // Build geofence centres from pending/in-progress complaints
+        const geofenceCenters = [];
+        complaintsSnap.forEach(ds => {
+          const d = ds.data();
+          const c = getGeofenceCenter(d);
+          if (c) geofenceCenters.push(c);
+        });
+
+        const activeKeys = new Set();
+
+        // Process each worker
+        for (const ds of workersSnap.docs) {
+          const w   = ds.data();
+          const key = w.email || ds.id;
+          activeKeys.add(key);
+
+          const pos = { lat: w.latitude, lng: w.longitude };
+
+          // Update attendance state
+          const centersForWorker = geofenceCenters.length ? geofenceCenters : [];
+          const state = await updateWorkerState(key, w.fullName || key, pos.lat, pos.lng, centersForWorker);
+
+          // Pick marker colour based on status
+          const iconUrl = state.status === 'present'
+            ? 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+            : state.status === 'grace'
+              ? 'https://maps.google.com/mapfiles/ms/icons/orange-dot.png'
+              : state.status === 'absent'
+                ? 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
+                : 'https://maps.google.com/mapfiles/ms/icons/grey-dot.png';
+
+          if (workerMarkers[key]) {
+            workerMarkers[key].setPosition(pos);
+            workerMarkers[key].setIcon(iconUrl);
+            workerGeofences[key].setCenter(pos);
+          } else {
+            const marker = new google.maps.Marker({
+              position: pos, map,
+              icon: iconUrl,
+              title: w.fullName || key
+            });
+
+            const geofenceColor = state.status === 'present' ? '#22c55e'
+              : state.status === 'grace' ? '#f59e0b' : '#ef4444';
+
+            const circle = new google.maps.Circle({
+              map, center: pos, radius: GEOFENCE_RADIUS_M,
+              fillColor: geofenceColor, fillOpacity: 0.12,
+              strokeColor: geofenceColor, strokeWeight: 1.5
+            });
+
+            const info = new google.maps.InfoWindow();
+            marker.addListener("click", () => {
+              info.setContent(buildInfoWindowContent(key, w, state));
+              info.open(map, marker);
+            });
+
+            workerMarkers[key]    = marker;
+            workerGeofences[key]  = circle;
+            workerInfoWindows[key] = info;
+          }
+
+          // Update geofence ring colour on status change
+          const col = state.status === 'present' ? '#22c55e'
+            : state.status === 'grace' ? '#f59e0b' : '#ef4444';
+          workerGeofences[key].setOptions({ fillColor: col, strokeColor: col });
+        }
+
+        // Remove stale markers
+        Object.keys(workerMarkers).forEach(key => {
+          if (!activeKeys.has(key)) {
+            workerMarkers[key]?.setMap(null);
+            workerGeofences[key]?.setMap(null);
+            delete workerMarkers[key];
+            delete workerGeofences[key];
+            delete workerState[key];
+          }
+        });
+
+        // Render status list + summary cards
+        renderWorkerStatusList();
+        document.getElementById('map-last-updated').textContent =
+          'Last updated: ' + new Date().toLocaleTimeString('en-IN', { hour12: false });
+
+      } catch (e) { console.error('pollWorkersAndAttendance error', e); }
+    }
+
+    function buildInfoWindowContent(email, w, state) {
+      const statusLabel = state.status === 'present' ? '🟢 Present'
+        : state.status === 'grace' ? '🟠 Grace Period'
+        : state.status === 'absent' ? '🔴 Absent' : '⚫ Unknown';
+
+      const graceRemaining = (state.status === 'grace' && state.exitTime)
+        ? Math.max(0, Math.ceil((ABSENT_THRESHOLD_MS - (Date.now() - state.exitTime)) / 60000))
+        : null;
+
+      return `
+        <div style="font-family:Poppins,sans-serif;min-width:200px;padding:4px">
+          <strong style="font-size:14px">${w.fullName || email}</strong><br>
+          <span style="font-size:12px;color:#666">${email}</span><br>
+          <div style="margin-top:8px;font-size:13px"><b>Status:</b> ${statusLabel}</div>
+          ${graceRemaining !== null ? `<div style="font-size:12px;color:#b45309">⏱ ${graceRemaining} min until absent</div>` : ''}
+          ${state.exitTime && state.status !== 'present' ? `<div style="font-size:12px;color:#666">Left zone: ${new Date(state.exitTime).toLocaleTimeString('en-IN')}</div>` : ''}
+          <div style="font-size:11px;color:#999;margin-top:4px">📍 ${w.latitude?.toFixed(5)}, ${w.longitude?.toFixed(5)}</div>
+        </div>`;
+    }
+
+    // ─── Render the side worker status list ───────────────────────
+    function renderWorkerStatusList() {
+      const list = document.getElementById('worker-status-list');
+      const states = Object.entries(workerState);
+
+      let present = 0, grace = 0, absent = 0;
+      states.forEach(([,s]) => {
+        if (s.status === 'present') present++;
+        else if (s.status === 'grace') grace++;
+        else if (s.status === 'absent') absent++;
+      });
+
+      document.getElementById('att-total').textContent   = states.length || '0';
+      document.getElementById('att-present').textContent = present;
+      document.getElementById('att-grace').textContent   = grace;
+      document.getElementById('att-absent').textContent  = absent;
+
+      if (!states.length) {
+        list.innerHTML = `<div class="text-center text-gray-400 text-sm py-12">
+          <i class="fas fa-satellite-dish text-3xl mb-3 block"></i>No workers reporting GPS yet.</div>`;
+        return;
+      }
+
+      // Sort: absent first, then grace, then present
+      const sorted = states.sort(([,a],[,b]) => {
+        const order = { absent: 0, grace: 1, present: 2, unknown: 3 };
+        return order[a.status] - order[b.status];
+      });
+
+      list.innerHTML = sorted.map(([email, s]) => {
+        const graceMs = (s.status === 'grace' && s.exitTime)
+          ? Date.now() - s.exitTime : 0;
+        const gracePct = s.status === 'grace'
+          ? Math.min(100, Math.round((graceMs / ABSENT_THRESHOLD_MS) * 100)) : 0;
+        const graceMinLeft = s.status === 'grace'
+          ? Math.max(0, Math.ceil((ABSENT_THRESHOLD_MS - graceMs) / 60000)) : 0;
+
+        const dotClass  = s.status;
+        const pillClass = s.status;
+
+        return `
+          <div class="worker-status-row" onclick="focusWorkerOnMap('${email}')">
+            <span class="status-dot ${dotClass}"></span>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name || email}</div>
+              <div style="font-size:11px;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${email}</div>
+              ${s.status === 'grace' ? `
+                <div class="countdown-wrap" style="margin-top:5px">
+                  <div class="countdown-bar" style="width:${gracePct}%;background:${gracePct > 75 ? '#ef4444' : '#f59e0b'}"></div>
+                </div>
+                <div style="font-size:10px;color:#b45309;margin-top:2px">⏱ ${graceMinLeft} min left before absent</div>
+              ` : ''}
+              ${s.status === 'absent' && s.exitTime ? `
+                <div style="font-size:10px;color:#b91c1c;margin-top:2px">Left zone at ${new Date(s.exitTime).toLocaleTimeString('en-IN')}</div>
+              ` : ''}
+            </div>
+            <span class="attendance-pill ${pillClass}">${
+              s.status === 'present' ? 'Present'
+              : s.status === 'grace' ? 'Grace'
+              : s.status === 'absent' ? 'Absent' : 'Unknown'
+            }</span>
+          </div>`;
+      }).join('');
+    }
+
+    // Click worker row → pan map to them
+    window.focusWorkerOnMap = function(email) {
+      const s = workerState[email];
+      if (s && map && s.lat) {
+        map.panTo({ lat: s.lat, lng: s.lng });
+        map.setZoom(15);
+        if (workerMarkers[email] && workerInfoWindows[email]) {
+          workerInfoWindows[email].setContent(buildInfoWindowContent(email, { fullName: s.name, latitude: s.lat, longitude: s.lng }, s));
+          workerInfoWindows[email].open(map, workerMarkers[email]);
+        }
+      }
+    };
+
+    // Export attendance CSV
+    window.exportAttendanceCSV = function() {
+      const rows = [['Worker', 'Email', 'Status', 'Exit Time', 'Last Seen']];
+      Object.entries(workerState).forEach(([email, s]) => {
+        rows.push([
+          s.name || email, email, s.status,
+          s.exitTime ? new Date(s.exitTime).toLocaleTimeString('en-IN') : '—',
+          s.lastSeen ? new Date(s.lastSeen).toLocaleTimeString('en-IN') : '—'
+        ]);
+      });
+      const csv  = rows.map(r => r.join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a'); a.href = url;
+      a.download = `attendance_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click(); URL.revokeObjectURL(url);
+    };
+
+    // ══════════════════════════════════════════════════════════════
+    // ATTENDANCE LOGS TABLE
+    // ══════════════════════════════════════════════════════════════
+    async function loadAttendanceLogs() {
+      const tbody = document.getElementById('attendanceBody');
+      tbody.innerHTML = '';
+      try {
+        const snap = await getDocs(collection(db, "attendance_logs"));
+        const logs = [];
+        snap.forEach(ds => logs.push(ds.data()));
+        // Sort newest first
+        logs.sort((a,b) => (b.timestamp||'').localeCompare(a.timestamp||''));
+
+        logs.slice(0, 50).forEach(d => {
+          const isAbsent  = d.status === 'Absent';
+          const isPresent = d.status === 'Present';
+          const pillCls   = isAbsent ? 'bg-red-100 text-red-700' : isPresent ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600';
+          tbody.innerHTML += `
+            <tr class="hover:bg-gray-50 transition-colors">
+              <td class="py-4 px-3">${d.workerName || '—'}</td>
+              <td class="py-4 px-3 text-xs text-gray-500">${d.email || '—'}</td>
+              <td class="py-4 px-3">${d.date || '—'}</td>
+              <td class="py-4 px-3">${d.checkInTime || '—'}</td>
+              <td class="py-4 px-3 text-gray-400">${d.exitTime || '—'}</td>
+              <td class="py-4 px-3">
+                <span class="px-3 py-1 rounded-full text-xs font-medium ${pillCls}">
+                  ${d.status || '—'}
+                  ${isAbsent && d.reason ? `<span title="${d.reason}"> ⓘ</span>` : ''}
+                </span>
+              </td>
+            </tr>`;
+        });
+
+        if (!logs.length) {
+          tbody.innerHTML = `<tr><td colspan="6" class="py-10 text-center text-gray-400">No attendance records yet.</td></tr>`;
+        }
+      } catch (e) { console.error('loadAttendanceLogs', e); }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // ADD EMPLOYEE
+    // ══════════════════════════════════════════════════════════════
+    document.getElementById('addEmployeeBtn').addEventListener('click', () => document.getElementById('overlay').classList.add('open'));
+    document.getElementById('closeBtn').addEventListener('click',   () => document.getElementById('overlay').classList.remove('open'));
+    document.getElementById('cancelBtn').addEventListener('click',  () => document.getElementById('overlay').classList.remove('open'));
+
+    document.getElementById('submitBtn').addEventListener('click', async () => {
+      const name = document.getElementById('f-name').value.trim();
+      const email = document.getElementById('f-email').value.trim().toLowerCase();
+      const pass  = document.getElementById('f-pass').value.trim();
+      const dept  = document.getElementById('f-dept').value;
+      if (!name || !email || !pass || !dept) return alert("All fields required");
+      try {
+        await addDoc(collection(db, "employees"), {
+          fullName: name, email, password: pass, department: dept,
+          createdAt: new Date().toISOString()
+        });
+        showToast('✅ Employee Added!', `${name} registered successfully.`);
+        document.getElementById('overlay').classList.remove('open');
+      } catch (e) { alert("Failed: " + e.message); }
+    });
+
+    // ══════════════════════════════════════════════════════════════
+    // ASSIGN MODAL
+    // ══════════════════════════════════════════════════════════════
+    let selectedWorker = null, selectedWorkerEmail = null;
+
+    window.openAssignModal = async () => {
+      document.getElementById('assignOverlay').classList.add('open');
+      selectedWorker = null; selectedWorkerEmail = null;
+      document.getElementById('assignBtn').disabled = true;
+      await loadPendingComplaints();
+      await loadEmployeesForAssign();
+    };
+    document.getElementById('closeAssignBtn').addEventListener('click',  () => document.getElementById('assignOverlay').classList.remove('open'));
+    document.getElementById('cancelAssignBtn').addEventListener('click', () => document.getElementById('assignOverlay').classList.remove('open'));
+
+    async function loadPendingComplaints() {
+      const sel = document.getElementById('complaintSelect');
+      sel.innerHTML = `<option>Loading…</option>`;
+      try {
+        const q    = query(collection(db, "complaints"), where("status", "in", ["pending","in-progress"]));
+        const snap = await getDocs(q);
+        sel.innerHTML = `<option value="">-- Select Complaint --</option>`;
+        snap.forEach(ds => {
+          const d   = ds.data();
+          const opt = document.createElement('option');
+          opt.value = ds.id;
+          opt.textContent = `${d.complaintId||ds.id} | ${d.fullName} - ${d.category}`;
+          sel.appendChild(opt);
+        });
+      } catch(e) { sel.innerHTML = `<option>Error loading</option>`; }
+    }
+
+    async function loadEmployeesForAssign() {
+      const tbody = document.getElementById('employeesTableBody');
+      tbody.innerHTML = '';
+      try {
+        const snap = await getDocs(collection(db, "employees"));
+        snap.forEach(ds => {
+          const emp = ds.data();
+          // Show live status badge if available
+          const s = workerState[emp.email];
+          const badge = s ? `<span style="font-size:10px;padding:2px 8px;border-radius:10px;margin-left:6px;background:${s.status==='present'?'#dcfce7':s.status==='grace'?'#fef3c7':'#fee2e2'};color:${s.status==='present'?'#15803d':s.status==='grace'?'#b45309':'#b91c1c'}">${s.status}</span>` : '';
+          const row = document.createElement('tr');
+          row.className = "hover:bg-blue-50";
+          row.innerHTML = `<td class="py-3 px-6">${emp.fullName}${badge}</td><td class="py-3 px-6">${emp.email}</td><td class="py-3 px-6">${emp.department}</td>`;
+          row.onclick = () => {
+            document.querySelectorAll('#employeesTableBody tr').forEach(r => r.style.background = '');
+            row.style.background = '#dbeafe';
+            selectedWorker = emp.fullName; selectedWorkerEmail = emp.email;
+            document.getElementById('assignBtn').disabled  = false;
+            document.getElementById('assignBtn').textContent = `Assign ${emp.fullName}`;
+          };
+          tbody.appendChild(row);
+        });
+      } catch(e) { console.error(e); }
+    }
+
+    document.getElementById('assignBtn').addEventListener('click', async () => {
+      const complaintId = document.getElementById('complaintSelect').value;
+      if (!complaintId || !selectedWorkerEmail) return alert("Please select both");
+      try {
+        await updateDoc(doc(db, "complaints", complaintId), {
+          assignedTo: selectedWorkerEmail,
+          assignedWorkerName: selectedWorker,
+          status: "in-progress"
+        });
+        showToast('✅ Assigned!', `${selectedWorker} assigned successfully.`);
+        document.getElementById('assignOverlay').classList.remove('open');
+        loadComplaints();
+      } catch(e) { alert("Failed: " + e.message); }
+    });
+
+    // ══════════════════════════════════════════════════════════════
+    // COMPLAINTS TABLE
+    // ══════════════════════════════════════════════════════════════
+    async function loadComplaints() {
+      const tbody = document.getElementById('complaintsTableBody');
+      tbody.innerHTML = `<tr><td colspan="8" class="py-20 text-center"><i class="fas fa-spinner fa-spin text-4xl text-blue-400"></i></td></tr>`;
+      try {
+        const q    = query(collection(db, "complaints"), orderBy("date", "desc"));
+        const snap = await getDocs(q);
+        tbody.innerHTML = '';
+        snap.forEach(ds => {
+          const d        = ds.data();
+          const assigned = d.assignedWorkerName || d.assignedTo || "Not Assigned";
+          const sCls     = d.status === 'pending'     ? 'bg-yellow-100 text-yellow-700'
+                         : d.status === 'in-progress' ? 'bg-blue-100 text-blue-700'
+                         :                              'bg-green-100 text-green-700';
+          const sLabel   = d.status === 'pending' ? 'Pending' : d.status === 'in-progress' ? 'In Progress' : 'Resolved';
+          tbody.innerHTML += `
+            <tr class="hover:bg-gray-50 transition-colors">
+              <td class="py-4 px-4">${d.complaintId||'N/A'}</td>
+              <td class="py-4 px-4">${d.fullName||'—'}</td>
+              <td class="py-4 px-4">${d.category||'—'}</td>
+              <td class="py-4 px-4"><span class="px-3 py-1 rounded-full text-xs font-medium ${sCls}">${sLabel}</span></td>
+              <td class="py-4 px-4">${assigned}</td>
+              <td class="py-4 px-4">${d.date ? new Date(d.date).toLocaleDateString('en-IN') : '—'}</td>
+              <td class="py-4 px-4">
+                <a href="https://www.google.com/maps?q=${d.location?.lat||19.076},${d.location?.lng||72.8777}" target="_blank" class="text-blue-600 text-xs underline">View Map</a>
+              </td>
+              <td class="py-4 px-4">
+                <button onclick="updateStatus('${ds.id}','resolved')" class="bg-green-600 text-white text-xs px-3 py-1 rounded-lg">Resolve</button>
+              </td>
+            </tr>`;
+        });
+        if (!snap.size) tbody.innerHTML = `<tr><td colspan="8" class="py-10 text-center text-gray-400">No complaints found.</td></tr>`;
+      } catch(e) { console.error(e); }
+    }
+
+    window.updateStatus = async (docId, newStatus) => {
+      await updateDoc(doc(db, "complaints", docId), { status: newStatus });
+      loadComplaints();
+    };
+
+    // ══════════════════════════════════════════════════════════════
+    // TOAST
+    // ══════════════════════════════════════════════════════════════
+    function showToast(title, msg, isError = false) {
+      const t = document.getElementById('toast');
+      document.getElementById('toastTitle').textContent = title;
+      document.getElementById('toastMsg').textContent   = msg;
+      t.className = 'toast show' + (isError ? ' error' : '');
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.remove('show'), 5000);
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // INIT
+    // ══════════════════════════════════════════════════════════════
+    document.addEventListener('DOMContentLoaded', () => {
+      initWorkersMap();
+      loadAttendanceLogs();
+      loadComplaints();
+      // Re-render status list every second for live countdown bars
+      setInterval(renderWorkerStatusList, 1000);
+    });
+  </script>
+</body>
+</html>
