@@ -1,0 +1,1660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Municipal Works Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-base: #f0f4f8;
+    --bg-card: #ffffff;
+    --bg-surface: #f7f9fc;
+    --bg-hover: #eef2f7;
+    --border: #dce3ed;
+    --border-glow: #2e7dff33;
+    --accent: #2563eb;
+    --accent-dim: #1e4fc2;
+    --accent-glow: #2563eb18;
+    --green: #059669;
+    --green-dim: #05966918;
+    --orange: #d97706;
+    --orange-dim: #d9770618;
+    --red: #dc2626;
+    --red-dim: #dc262618;
+    --yellow: #b45309;
+    --yellow-dim: #b4530918;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --font-display: 'Rajdhani', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg-base);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; }
+
+  /* ── LOGIN ────────────────────────────────────── */
+  #login-screen {
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-base);
+    overflow: hidden;
+  }
+
+  .login-grid-bg {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: .35;
+    mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black 30%, transparent 100%);
+  }
+
+  .login-glow {
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, #2563eb0d 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .login-card {
+    position: relative;
+    width: 440px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px 40px 40px;
+    box-shadow: 0 0 0 1px #0000000a, 0 32px 64px #64748b28;
+    animation: cardIn .5s cubic-bezier(.16,1,.3,1) both;
+  }
+
+  @keyframes cardIn {
+    from { opacity:0; transform: translateY(24px) scale(.97); }
+    to   { opacity:1; transform: translateY(0) scale(1); }
+  }
+
+  .login-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 36px; }
+  .logo-icon {
+    width: 44px; height: 44px;
+    background: var(--accent); border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; box-shadow: 0 0 24px #2e7dff44;
+  }
+  .logo-text { font-family: var(--font-display); font-size: 22px; font-weight: 700; letter-spacing: 1px; }
+  .logo-sub  { font-size: 11px; color: var(--text-secondary); letter-spacing: 2px; text-transform: uppercase; }
+
+  .login-title { font-family: var(--font-display); font-size: 30px; font-weight: 700; letter-spacing: .5px; margin-bottom: 6px; }
+  .login-subtitle { font-size: 14px; color: var(--text-secondary); margin-bottom: 32px; }
+
+  .field { margin-bottom: 20px; }
+  .field label { display: block; font-size: 12px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; }
+  .field-wrap { position: relative; }
+  .field-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 16px; pointer-events: none; }
+  .field input {
+    width: 100%; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 13px 14px 13px 42px; font-family: var(--font-body); font-size: 15px; color: var(--text-primary);
+    outline: none; transition: border-color .2s, box-shadow .2s;
+  }
+  .field input::placeholder { color: var(--text-muted); }
+  .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--border-glow); }
+
+  .login-options { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; font-size: 13px; }
+  .remember { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); cursor: pointer; }
+  .remember input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; }
+  .forgot { color: var(--accent); text-decoration: none; font-size: 13px; }
+  .forgot:hover { text-decoration: underline; }
+
+  .btn-login {
+    width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 10px;
+    padding: 14px; font-family: var(--font-display); font-size: 17px; font-weight: 600; letter-spacing: 1px;
+    cursor: pointer; transition: background .2s, box-shadow .2s, transform .1s; position: relative; overflow: hidden;
+  }
+  .btn-login:hover { background: #3d8bff; box-shadow: 0 4px 20px #2e7dff44; }
+  .btn-login:active { transform: scale(.98); }
+  .btn-login .btn-shimmer {
+    position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, #ffffff22, transparent);
+    animation: shimmer 2.5s infinite;
+  }
+  @keyframes shimmer { to { left: 160%; } }
+
+  .login-footer { text-align: center; margin-top: 28px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 20px; letter-spacing: .5px; }
+
+  /* ── DASHBOARD ────────────────────────────────── */
+  #dashboard-screen { flex-direction: column; background: var(--bg-base); }
+
+  .topnav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px; height: 64px; background: var(--bg-card); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .nav-brand { display: flex; align-items: center; gap: 10px; }
+  .nav-brand .logo-icon { width: 36px; height: 36px; font-size: 17px; border-radius: 9px; }
+  .nav-brand span { font-family: var(--font-display); font-size: 18px; font-weight: 700; letter-spacing: 1px; }
+  .nav-right { display: flex; align-items: center; gap: 16px; }
+  .nav-time { font-family: var(--font-display); font-size: 20px; font-weight: 600; color: var(--accent); letter-spacing: 2px; }
+
+  .avatar {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), #7c3aed);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+
+  .dash-body { display: grid; grid-template-columns: 1fr; flex: 1; min-height: 0; }
+
+  .dash-content { overflow-y: auto; padding: 28px; display: flex; flex-direction: column; gap: 24px; }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(12px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  /* Stats */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; animation: fadeUp .4s .08s cubic-bezier(.16,1,.3,1) both; }
+  .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; position: relative; overflow: hidden; }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .stat-card.blue::before  { background: var(--accent); }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.orange::before{ background: var(--orange); }
+  .stat-card.red::before   { background: var(--red); }
+  .stat-label { font-size: 12px; color: var(--text-secondary); letter-spacing: .5px; margin-bottom: 8px; }
+  .stat-value { font-family: var(--font-display); font-size: 32px; font-weight: 700; line-height: 1; }
+  .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+  /* Section */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .section-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: .5px; }
+  .filter-row { display: flex; gap: 8px; }
+  .filter-btn {
+    padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 500;
+    border: 1px solid var(--border); background: transparent; color: var(--text-secondary);
+    cursor: pointer; transition: all .15s; font-family: var(--font-body);
+  }
+  .filter-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .filter-btn.active { background: var(--accent-glow); color: var(--accent); border-color: var(--border-glow); }
+
+  /* Task cards */
+  .tasks-list { display: flex; flex-direction: column; gap: 12px; animation: fadeUp .4s .16s cubic-bezier(.16,1,.3,1) both; }
+
+  .task-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 20px; display: grid; grid-template-columns: 4px 1fr auto;
+    gap: 16px; align-items: start; transition: border-color .2s, background .2s;
+    position: relative; overflow: hidden;
+  }
+  .task-card:hover { border-color: #2e7dff44; background: var(--bg-surface); }
+
+  .task-stripe { border-radius: 4px; align-self: stretch; }
+  .task-stripe.high   { background: var(--red); }
+  .task-stripe.medium { background: var(--orange); }
+  .task-stripe.low    { background: var(--green); }
+
+  .task-top { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .task-id { font-size: 11px; color: var(--text-muted); font-family: monospace; }
+  .task-title { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
+  .task-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px; }
+  .task-meta { display: flex; gap: 16px; flex-wrap: wrap; }
+  .meta-chip { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .meta-chip .dot { font-size: 14px; }
+
+  .task-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+
+  .priority-badge { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 3px 10px; border-radius: 6px; }
+  .priority-badge.high   { background: var(--red-dim);    color: var(--red);    border: 1px solid #ff4b5c33; }
+  .priority-badge.medium { background: var(--orange-dim); color: var(--orange); border: 1px solid #ff8c3b33; }
+  .priority-badge.low    { background: var(--green-dim);  color: var(--green);  border: 1px solid #00c97a33; }
+
+  .status-badge { font-size: 10px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; }
+  .status-badge.pending    { background: var(--yellow-dim); color: var(--yellow); border: 1px solid #ffd23f33; }
+  .status-badge.inprogress { background: var(--accent-glow); color: var(--accent); border: 1px solid var(--border-glow); }
+  .status-badge.done       { background: var(--green-dim); color: var(--green); border: 1px solid #00c97a33; }
+
+  .progress-bar-wrap { width: 100%; height: 4px; background: var(--bg-surface); border-radius: 2px; margin-top: 4px; }
+  .progress-bar { height: 100%; border-radius: 2px; transition: width .5s ease; }
+
+  /* ── PHOTO UPLOAD BUTTON ───────────────────────── */
+  .task-footer {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+  }
+
+  .photo-thumbnails {
+    display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+  }
+
+  .thumb-img {
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid var(--border);
+    cursor: pointer;
+    transition: transform .15s, border-color .15s;
+  }
+  .thumb-img:hover { transform: scale(1.08); border-color: var(--accent); }
+
+  .thumb-more {
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    background: var(--bg-hover);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .btn-upload-photo {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--accent-glow);
+    color: var(--accent);
+    border: 1px solid var(--border-glow);
+    border-radius: 9px;
+    padding: 8px 16px;
+    font-family: var(--font-body);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: background .2s, transform .1s;
+    white-space: nowrap;
+  }
+  .btn-upload-photo:hover { background: #2e7dff22; transform: translateY(-1px); }
+  .btn-upload-photo:active { transform: scale(.97); }
+  .btn-upload-photo .cam-icon { font-size: 15px; }
+
+  /* ── UPLOAD MODAL ─────────────────────────────── */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: #0f172acc;
+    backdrop-filter: blur(4px);
+    z-index: 300;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .upload-modal {
+    width: 520px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    box-shadow: 0 32px 80px #0f172a44;
+    overflow: hidden;
+    animation: modalIn .3s cubic-bezier(.16,1,.3,1) both;
+  }
+
+  @keyframes modalIn {
+    from { opacity:0; transform: translateY(20px) scale(.96); }
+    to   { opacity:1; transform: translateY(0) scale(1); }
+  }
+
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-surface);
+  }
+
+  .modal-title {
+    font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: .5px;
+  }
+  .modal-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  .modal-close {
+    width: 32px; height: 32px; border-radius: 8px;
+    border: 1px solid var(--border); background: transparent;
+    cursor: pointer; font-size: 16px; color: var(--text-secondary);
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .modal-close:hover { background: var(--red-dim); color: var(--red); border-color: #ff4b5c33; }
+
+  .modal-body { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+
+  /* Drop zone */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    background: var(--bg-surface);
+    position: relative;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .drop-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .drop-icon { font-size: 26px; margin-bottom: 6px; display: block; }
+  .drop-title { font-family: var(--font-display); font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .drop-sub { font-size: 11px; color: var(--text-muted); }
+  .drop-formats { display: inline-flex; gap: 6px; margin-top: 10px; }
+  .drop-tag { font-size: 10px; font-weight: 600; letter-spacing: 1px; padding: 2px 8px; border-radius: 4px; background: var(--bg-hover); color: var(--text-muted); border: 1px solid var(--border); }
+
+  /* Preview grid */
+  .preview-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  .preview-item {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    aspect-ratio: 1;
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    animation: fadeUp .25s cubic-bezier(.16,1,.3,1) both;
+  }
+
+  .preview-item img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+
+  .preview-remove {
+    position: absolute; top: 4px; right: 4px;
+    width: 22px; height: 22px;
+    background: #0f172acc;
+    border: none; border-radius: 50%;
+    color: #fff; font-size: 12px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity .15s;
+  }
+  .preview-item:hover .preview-remove { opacity: 1; }
+
+  .preview-uploading {
+    position: absolute; inset: 0;
+    background: #0f172a88;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px;
+  }
+
+  .upload-spinner {
+    width: 24px; height: 24px;
+    border: 3px solid #ffffff44;
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .preview-uploading span { font-size: 10px; color: #fff; font-weight: 600; }
+
+  .preview-done {
+    position: absolute; inset: 0;
+    background: #05966980;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    animation: fadeUp .2s both;
+  }
+
+  /* Caption input */
+  .caption-row {
+    display: flex; gap: 10px;
+  }
+  .caption-input {
+    flex: 1;
+    background: var(--bg-surface); border: 1px solid var(--border); border-radius: 9px;
+    padding: 10px 14px; font-family: var(--font-body); font-size: 13px; color: var(--text-primary);
+    outline: none; transition: border-color .2s, box-shadow .2s;
+  }
+  .caption-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--border-glow); }
+  .caption-input::placeholder { color: var(--text-muted); }
+
+  /* Modal footer */
+  .modal-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg-surface);
+  }
+
+  .modal-footer-left { font-size: 12px; color: var(--text-muted); }
+
+  .btn-submit-upload {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 10px;
+    padding: 11px 22px;
+    font-family: var(--font-display); font-size: 16px; font-weight: 600; letter-spacing: .5px;
+    cursor: pointer; transition: background .2s, transform .1s;
+  }
+  .btn-submit-upload:hover { background: #3d8bff; }
+  .btn-submit-upload:active { transform: scale(.97); }
+  .btn-submit-upload:disabled { background: var(--text-muted); cursor: not-allowed; opacity: .6; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--text-primary); color: #fff;
+    padding: 12px 20px; border-radius: 12px;
+    font-size: 13px; font-weight: 500;
+    box-shadow: 0 8px 32px #0f172a44;
+    z-index: 999;
+    display: flex; align-items: center; gap: 10px;
+    transform: translateY(80px); opacity: 0;
+    transition: all .3s cubic-bezier(.16,1,.3,1);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: var(--green); }
+  .toast.error   { background: var(--red); }
+
+  /* Profile dropdown */
+  .profile-wrap { position: relative; }
+  .profile-dropdown {
+    display: none; position: absolute; top: calc(100% + 10px); right: 0;
+    width: 260px; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 14px; box-shadow: 0 16px 40px #64748b22; z-index: 200; overflow: hidden;
+    animation: fadeUp .2s cubic-bezier(.16,1,.3,1) both;
+  }
+  .profile-dropdown.open { display: block; }
+  .profile-dropdown-top { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--border); background: var(--bg-surface); }
+  .worker-avatar { width: 42px; height: 42px; background: linear-gradient(135deg, var(--accent), #7c3aed); border-radius: 11px; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 18px; font-weight: 700; }
+  .profile-dropdown-name { font-family: var(--font-display); font-size: 17px; font-weight: 700; }
+  .profile-dropdown-id { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .profile-dropdown-body { padding: 12px 18px; display: flex; flex-direction: column; gap: 6px; }
+  .profile-info-row { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+  .profile-dropdown-footer { padding: 10px 18px; border-top: 1px solid var(--border); }
+  .profile-dropdown-footer button {
+    width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 9px 14px; border-radius: 10px; font-size: 13px; font-weight: 500;
+    background: transparent; border: 1px solid var(--border); color: var(--text-secondary);
+    cursor: pointer; transition: all .15s; font-family: var(--font-body);
+  }
+  .profile-dropdown-footer button:hover { background: var(--red-dim); color: var(--red); border-color: #ff4b5c33; }
+
+  .notif-dot { position: relative; }
+  .notif-dot::after { content: ''; position: absolute; top: 0; right: 0; width: 8px; height: 8px; background: var(--red); border-radius: 50%; border: 2px solid var(--bg-card); }
+
+  @keyframes tickTock { 50% { opacity: .6; } }
+  .nav-time { animation: tickTock 1s step-start infinite; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── FLOATING ACTION BUTTON ──────────────────────── */
+  .fab-wrap {
+    position: fixed;
+    bottom: 32px; right: 32px;
+    z-index: 250;
+    display: none;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+  }
+  .fab-wrap.visible { display: flex; }
+
+  /* Speed-dial options */
+  .fab-options {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+    pointer-events: none; opacity: 0;
+    transform: translateY(12px);
+    transition: opacity .25s, transform .25s cubic-bezier(.16,1,.3,1);
+  }
+  .fab-options.open { pointer-events: all; opacity: 1; transform: translateY(0); }
+
+  .fab-option {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: 13px; font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+    box-shadow: 0 4px 20px #64748b22;
+    transition: background .15s, border-color .15s, transform .15s;
+    white-space: nowrap;
+    animation: fadeUp .2s both;
+  }
+  .fab-option:hover { background: var(--accent-glow); border-color: var(--border-glow); color: var(--accent); transform: translateX(-4px); }
+  .fab-option .fab-opt-icon { font-size: 16px; }
+
+  /* Main FAB */
+  .fab-main {
+    width: 56px; height: 56px;
+    background: var(--accent);
+    border-radius: 50%;
+    border: none;
+    box-shadow: 0 4px 24px #2e7dff66;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    cursor: pointer;
+    transition: background .2s, transform .2s, box-shadow .2s;
+    position: relative;
+  }
+  .fab-main:hover { background: #3d8bff; box-shadow: 0 6px 32px #2e7dff88; transform: scale(1.07); }
+  .fab-main.open  { background: var(--text-primary); transform: rotate(45deg); }
+
+  /* Pulse ring on FAB */
+  .fab-main::before {
+    content: '';
+    position: absolute; inset: -6px;
+    border-radius: 50%;
+    border: 2px solid #2e7dff44;
+    animation: fabPulse 2.2s infinite;
+  }
+  @keyframes fabPulse {
+    0%   { transform: scale(1);   opacity: 1; }
+    70%  { transform: scale(1.3); opacity: 0; }
+    100% { transform: scale(1.3); opacity: 0; }
+  }
+
+  /* ── GENERAL UPLOAD MODAL ───────────────────────── */
+  .gen-modal {
+    width: 420px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 32px 80px #0f172a44;
+    overflow: hidden;
+    animation: modalIn .3s cubic-bezier(.16,1,.3,1) both;
+  }
+
+  .gen-modal .modal-header {
+    background: linear-gradient(135deg, #2563eb12, #7c3aed10);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .gen-modal-tabs {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-surface);
+  }
+  .gen-tab {
+    flex: 1; padding: 12px;
+    font-size: 13px; font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer; text-align: center;
+    border-bottom: 2px solid transparent;
+    transition: all .15s;
+    font-family: var(--font-body);
+    background: none; border-top: none; border-left: none; border-right: none;
+  }
+  .gen-tab:hover { color: var(--text-primary); background: var(--bg-hover); }
+  .gen-tab.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--bg-card); }
+
+  .gen-panel { display: none; padding: 16px; flex-direction: column; gap: 12px; }
+  .gen-panel.active { display: flex; }
+
+  /* Category chips */
+  .category-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cat-chip {
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 12px; font-weight: 500;
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    cursor: pointer; transition: all .15s;
+    font-family: var(--font-body);
+  }
+  .cat-chip:hover  { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+  .cat-chip.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+
+  /* Location row */
+  .location-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px; color: var(--text-secondary);
+  }
+  .location-row .loc-text { flex: 1; font-size: 12px; }
+  .btn-get-loc {
+    font-size: 11px; font-weight: 600; letter-spacing: .5px;
+    color: var(--accent); background: var(--accent-glow);
+    border: 1px solid var(--border-glow); border-radius: 7px;
+    padding: 5px 12px; cursor: pointer; transition: background .15s;
+    font-family: var(--font-body);
+  }
+  .btn-get-loc:hover { background: #2e7dff33; }
+
+  /* Uploaded gallery in modal */
+  .gen-gallery { display: flex; flex-direction: column; gap: 12px; }
+  .gen-gallery-empty { text-align:center; padding: 40px 20px; color: var(--text-muted); font-size: 14px; }
+  .gallery-item {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px 14px;
+    animation: fadeUp .2s both;
+  }
+  .gallery-item img { width: 52px; height: 52px; object-fit: cover; border-radius: 8px; cursor: pointer; flex-shrink: 0; }
+  .gallery-item-meta { flex: 1; min-width: 0; }
+  .gallery-item-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gallery-item-sub  { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+  .gallery-item-cat  { font-size: 10px; font-weight: 600; letter-spacing: .5px; padding: 2px 8px; border-radius: 4px; background: var(--accent-glow); color: var(--accent); border: 1px solid var(--border-glow); }
+
+  /* Lightbox */
+  .lightbox {
+    display: none; position: fixed; inset: 0;
+    background: #0f172af0; backdrop-filter: blur(8px);
+    z-index: 500; align-items: center; justify-content: center;
+  }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 90vw; max-height: 85vh; border-radius: 12px; box-shadow: 0 32px 80px #000; }
+  .lightbox-close {
+    position: absolute; top: 20px; right: 20px;
+    width: 40px; height: 40px; border-radius: 10px;
+    background: #ffffff22; border: 1px solid #ffffff33; color: #fff;
+    font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+  }
+  .lightbox-close:hover { background: #ffffff44; }
+</style>
+</head>
+<body>
+
+<!-- ───────────── LOGIN ───────────── -->
+<div id="login-screen" class="screen active">
+  <div class="login-grid-bg"></div>
+  <div class="login-glow"></div>
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-icon">📍</div>
+      <div>
+        <div class="logo-text">MUNITRACK</div>
+        <div class="logo-sub">Municipal Works System</div>
+      </div>
+    </div>
+    <h1 class="login-title">Worker Login</h1>
+    <p class="login-subtitle">Enter your credentials to access the dashboard</p>
+    <div class="field">
+      <label>Email Address</label>
+      <div class="field-wrap">
+        <span class="field-icon">✉</span>
+        <input type="email" id="email" placeholder="worker@municipal.gov.in" />
+      </div>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <div class="field-wrap">
+        <span class="field-icon">🔒</span>
+        <input type="password" id="password" placeholder="••••••••" />
+      </div>
+    </div>
+    <div class="login-options">
+      <label class="remember"><input type="checkbox" checked /> Remember me</label>
+      <a href="#" class="forgot">Forgot password?</a>
+    </div>
+    <button class="btn-login" onclick="doLogin()">
+      <div class="btn-shimmer"></div>
+      LOG IN →
+    </button>
+    <div class="login-footer">🔐 &nbsp;GPS location will be requested after login &nbsp;·&nbsp; Secure connection</div>
+  </div>
+</div>
+
+<!-- ─────────── DASHBOARD ─────────── -->
+<div id="dashboard-screen" class="screen">
+
+  <nav class="topnav">
+    <div class="nav-brand">
+      <div class="logo-icon">📍</div>
+      <span>MUNITRACK</span>
+    </div>
+    <div class="nav-right">
+      <div class="nav-time" id="nav-clock">00:00:00</div>
+      <div class="profile-wrap">
+        <div class="avatar notif-dot" onclick="toggleProfile()" id="nav-avatar">—</div>
+        <div class="profile-dropdown" id="profile-dropdown">
+          <div class="profile-dropdown-top">
+            <div class="worker-avatar" id="profile-avatar">—</div>
+            <div>
+              <div class="profile-dropdown-name" id="profile-name">—</div>
+              <div class="profile-dropdown-id" id="profile-email">—</div>
+            </div>
+          </div>
+          <div class="profile-dropdown-body">
+            <div class="profile-info-row">🏗 Civil Works Division</div>
+            <div class="profile-info-row">📍 Nashik Zone 3</div>
+          </div>
+          <div class="profile-dropdown-footer">
+            <button onclick="doLogout()">⬅ Logout</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dash-body">
+    <main class="dash-content">
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card blue">
+          <div class="stat-label">Tasks Assigned</div>
+          <div class="stat-value" style="color:var(--accent)">5</div>
+          <div class="stat-sub">This week</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Completed</div>
+          <div class="stat-value" style="color:var(--green)">2</div>
+          <div class="stat-sub">On time</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-label">In Progress</div>
+          <div class="stat-value" style="color:var(--orange)">2</div>
+          <div class="stat-sub">Active now</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Attendance</div>
+          <div class="stat-value" style="color:var(--yellow)">94%</div>
+          <div class="stat-sub">This month</div>
+        </div>
+      </div>
+
+      <!-- Tasks -->
+      <div>
+        <div class="section-header">
+          <div class="section-title">📋 Assigned Tasks</div>
+          <div class="filter-row">
+            <button class="filter-btn active" onclick="filterTasks('all',this)">All</button>
+            <button class="filter-btn" onclick="filterTasks('pending',this)">Pending</button>
+            <button class="filter-btn" onclick="filterTasks('inprogress',this)">In Progress</button>
+            <button class="filter-btn" onclick="filterTasks('done',this)">Done</button>
+          </div>
+        </div>
+
+        <div class="tasks-list" id="tasks-list">
+
+          <!-- Task 1 -->
+          <div class="task-card" data-status="inprogress" data-task-id="TASK-0091">
+            <div class="task-stripe high"></div>
+            <div class="task-body">
+              <div class="task-top"><span class="task-id">#TASK-0091</span></div>
+              <div class="task-title">Road Pothole Repair — MG Road Junction</div>
+              <div class="task-desc">Fill and compact 3 identified potholes near MG Road & Station Rd intersection. Apply bitumen patch and mark cones.</div>
+              <div class="task-meta">
+                <div class="meta-chip"><span class="dot">📍</span> MG Road, Nashik</div>
+                <div class="meta-chip"><span class="dot">📅</span> Due: 25 Mar 2026</div>
+                <div class="meta-chip"><span class="dot">👷</span> 2 workers</div>
+              </div>
+              <div class="progress-bar-wrap" style="margin-top:12px">
+                <div class="progress-bar" style="width:65%;background:var(--orange)"></div>
+              </div>
+            </div>
+            <div class="task-right">
+              <span class="priority-badge high">HIGH</span>
+              <span class="status-badge inprogress">In Progress</span>
+              <span style="font-size:12px;color:var(--text-muted)">65%</span>
+            </div>
+            <div class="task-footer">
+              <div class="photo-thumbnails" id="thumbs-TASK-0091"></div>
+              <button class="btn-upload-photo" onclick="openUploadModal('TASK-0091', 'Road Pothole Repair — MG Road Junction')">
+                <span class="cam-icon">📷</span> Upload Photo
+              </button>
+            </div>
+          </div>
+
+          <!-- Task 2 -->
+          <div class="task-card" data-status="inprogress" data-task-id="TASK-0087">
+            <div class="task-stripe medium"></div>
+            <div class="task-body">
+              <div class="task-top"><span class="task-id">#TASK-0087</span></div>
+              <div class="task-title">Streetlight Maintenance — Sector 7 Colony</div>
+              <div class="task-desc">Inspect and replace faulty sodium vapour lamps on Sector 7 main road. 8 poles need attention. Report to supervisor after completion.</div>
+              <div class="task-meta">
+                <div class="meta-chip"><span class="dot">📍</span> Sector 7, Nashik</div>
+                <div class="meta-chip"><span class="dot">📅</span> Due: 26 Mar 2026</div>
+                <div class="meta-chip"><span class="dot">👷</span> 1 worker</div>
+              </div>
+              <div class="progress-bar-wrap" style="margin-top:12px">
+                <div class="progress-bar" style="width:20%;background:var(--accent)"></div>
+              </div>
+            </div>
+            <div class="task-right">
+              <span class="priority-badge medium">MEDIUM</span>
+              <span class="status-badge inprogress">In Progress</span>
+              <span style="font-size:12px;color:var(--text-muted)">20%</span>
+            </div>
+            <div class="task-footer">
+              <div class="photo-thumbnails" id="thumbs-TASK-0087"></div>
+              <button class="btn-upload-photo" onclick="openUploadModal('TASK-0087', 'Streetlight Maintenance — Sector 7 Colony')">
+                <span class="cam-icon">📷</span> Upload Photo
+              </button>
+            </div>
+          </div>
+
+          <!-- Task 3 -->
+          <div class="task-card" data-status="pending" data-task-id="TASK-0083">
+            <div class="task-stripe high"></div>
+            <div class="task-body">
+              <div class="task-top"><span class="task-id">#TASK-0083</span></div>
+              <div class="task-title">Drain Cleaning — Gandhi Nagar Canal</div>
+              <div class="task-desc">Clear blocked storm drain along Gandhi Nagar canal stretch (~200m). Use JCB if needed. Dispose waste at designated site.</div>
+              <div class="task-meta">
+                <div class="meta-chip"><span class="dot">📍</span> Gandhi Nagar, Nashik</div>
+                <div class="meta-chip"><span class="dot">📅</span> Due: 27 Mar 2026</div>
+                <div class="meta-chip"><span class="dot">👷</span> 4 workers</div>
+              </div>
+              <div class="progress-bar-wrap" style="margin-top:12px">
+                <div class="progress-bar" style="width:0%;background:var(--red)"></div>
+              </div>
+            </div>
+            <div class="task-right">
+              <span class="priority-badge high">HIGH</span>
+              <span class="status-badge pending">Pending</span>
+              <span style="font-size:12px;color:var(--text-muted)">0%</span>
+            </div>
+            <div class="task-footer">
+              <div class="photo-thumbnails" id="thumbs-TASK-0083"></div>
+              <button class="btn-upload-photo" onclick="openUploadModal('TASK-0083', 'Drain Cleaning — Gandhi Nagar Canal')">
+                <span class="cam-icon">📷</span> Upload Photo
+              </button>
+            </div>
+          </div>
+
+          <!-- Task 4 -->
+          <div class="task-card" data-status="done" data-task-id="TASK-0079">
+            <div class="task-stripe low"></div>
+            <div class="task-body">
+              <div class="task-top"><span class="task-id">#TASK-0079</span></div>
+              <div class="task-title">Public Garden Upkeep — Rajiv Udyan</div>
+              <div class="task-desc">Weekly trimming of hedges and grass at Rajiv Udyan. Collect litter and clean pathways. Report damaged benches.</div>
+              <div class="task-meta">
+                <div class="meta-chip"><span class="dot">📍</span> Rajiv Udyan, Nashik</div>
+                <div class="meta-chip"><span class="dot">📅</span> Due: 28 Mar 2026</div>
+                <div class="meta-chip"><span class="dot">👷</span> 3 workers</div>
+              </div>
+              <div class="progress-bar-wrap" style="margin-top:12px">
+                <div class="progress-bar" style="width:100%;background:var(--green)"></div>
+              </div>
+            </div>
+            <div class="task-right">
+              <span class="priority-badge low">LOW</span>
+              <span class="status-badge done">Done</span>
+              <span style="font-size:12px;color:var(--green)">100%</span>
+            </div>
+            <div class="task-footer">
+              <div class="photo-thumbnails" id="thumbs-TASK-0079"></div>
+              <button class="btn-upload-photo" onclick="openUploadModal('TASK-0079', 'Public Garden Upkeep — Rajiv Udyan')">
+                <span class="cam-icon">📷</span> Upload Photo
+              </button>
+            </div>
+          </div>
+
+          <!-- Task 5 -->
+          <div class="task-card" data-status="done" data-task-id="TASK-0075">
+            <div class="task-stripe low"></div>
+            <div class="task-body">
+              <div class="task-top"><span class="task-id">#TASK-0075</span></div>
+              <div class="task-title">Footpath Tile Replacement — College Road</div>
+              <div class="task-desc">Replace broken paver tiles on 80m footpath stretch outside D.Y. Patil College. Ensure level surface and safety.</div>
+              <div class="task-meta">
+                <div class="meta-chip"><span class="dot">📍</span> College Road, Nashik</div>
+                <div class="meta-chip"><span class="dot">📅</span> Due: 30 Mar 2026</div>
+                <div class="meta-chip"><span class="dot">👷</span> 2 workers</div>
+              </div>
+              <div class="progress-bar-wrap" style="margin-top:12px">
+                <div class="progress-bar" style="width:100%;background:var(--green)"></div>
+              </div>
+            </div>
+            <div class="task-right">
+              <span class="priority-badge low">LOW</span>
+              <span class="status-badge done">Done</span>
+              <span style="font-size:12px;color:var(--green)">100%</span>
+            </div>
+            <div class="task-footer">
+              <div class="photo-thumbnails" id="thumbs-TASK-0075"></div>
+              <button class="btn-upload-photo" onclick="openUploadModal('TASK-0075', 'Footpath Tile Replacement — College Road')">
+                <span class="cam-icon">📷</span> Upload Photo
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ──────────── UPLOAD MODAL ──────────── -->
+<div class="modal-overlay" id="upload-modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="upload-modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">📷 Upload Site Photos</div>
+        <div class="modal-subtitle" id="modal-task-label">Task: —</div>
+      </div>
+      <button class="modal-close" onclick="closeUploadModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Drop zone -->
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="file-input" accept="image/*" multiple onchange="handleFiles(this.files)" />
+        <span class="drop-icon">🖼</span>
+        <div class="drop-title">Drop photos here or click to browse</div>
+        <div class="drop-sub">Supports JPG, PNG, WEBP · Max 10 MB each</div>
+        <div class="drop-formats">
+          <span class="drop-tag">JPG</span>
+          <span class="drop-tag">PNG</span>
+          <span class="drop-tag">WEBP</span>
+          <span class="drop-tag">HEIC</span>
+        </div>
+      </div>
+
+      <!-- Preview grid -->
+      <div class="preview-grid" id="preview-grid" style="display:none"></div>
+
+      <!-- Caption -->
+      <div id="caption-row" style="display:none">
+        <input class="caption-input" id="photo-caption" placeholder="Add a note or caption (optional)..." />
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <div class="modal-footer-left" id="modal-file-count">No files selected</div>
+      <button class="btn-submit-upload" id="submit-upload-btn" onclick="submitUpload()" disabled>
+        ☁ Upload All
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ──────── FLOATING ACTION BUTTON ──────── -->
+<div class="fab-wrap" id="fab-wrap">
+  <div class="fab-options" id="fab-options">
+    <button class="fab-option" onclick="openGenModal('upload'); toggleFab();" style="animation-delay:.08s">
+      <span class="fab-opt-icon">📤</span> Upload Photos
+    </button>
+    <button class="fab-option" onclick="openGenModal('gallery'); toggleFab();" style="animation-delay:.04s">
+      <span class="fab-opt-icon">🗂</span> My Uploads
+    </button>
+  </div>
+  <button class="fab-main" id="fab-main" onclick="toggleFab()" title="Upload Photos">+</button>
+</div>
+
+<!-- ──────── GENERAL UPLOAD MODAL ──────── -->
+<div class="modal-overlay" id="gen-modal-overlay" onclick="handleGenOverlayClick(event)">
+  <div class="gen-modal">
+
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;">
+        <div>
+          <div class="modal-title">📤 General Photo Upload</div>
+          <div class="modal-subtitle">Upload site evidence not linked to a specific task</div>
+        </div>
+        <button class="modal-close" onclick="closeGenModal()">✕</button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="gen-modal-tabs">
+      <button class="gen-tab active" onclick="switchGenTab('upload', this)">📷 Upload New</button>
+      <button class="gen-tab"        onclick="switchGenTab('gallery', this)">🗂 My Uploads</button>
+    </div>
+
+    <!-- UPLOAD PANEL -->
+    <div class="gen-panel active" id="gen-panel-upload">
+
+      <!-- Category -->
+      <div>
+        <div style="font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px;">Category</div>
+        <div class="category-chips" id="cat-chips">
+          <button class="cat-chip active" onclick="selectCat(this)">📍 Site Evidence</button>
+          <button class="cat-chip"        onclick="selectCat(this)">🚧 Hazard Report</button>
+          <button class="cat-chip"        onclick="selectCat(this)">🔍 Inspection</button>
+          <button class="cat-chip"        onclick="selectCat(this)">✅ Work Complete</button>
+          <button class="cat-chip"        onclick="selectCat(this)">📦 Material Delivery</button>
+          <button class="cat-chip"        onclick="selectCat(this)">🗑 Waste Disposal</button>
+        </div>
+      </div>
+
+      <!-- Drop zone -->
+      <div class="drop-zone" id="gen-drop-zone">
+        <input type="file" id="gen-file-input" accept="image/*" multiple onchange="handleGenFiles(this.files)" />
+        <span class="drop-icon">🖼</span>
+        <div class="drop-title">Drop photos here or click to browse</div>
+        <div class="drop-sub">Supports JPG, PNG, WEBP · Max 10 MB each · Multiple allowed</div>
+        <div class="drop-formats">
+          <span class="drop-tag">JPG</span><span class="drop-tag">PNG</span>
+          <span class="drop-tag">WEBP</span><span class="drop-tag">HEIC</span>
+        </div>
+      </div>
+
+      <!-- Preview grid -->
+      <div class="preview-grid" id="gen-preview-grid" style="display:none"></div>
+
+      <!-- Note + Location -->
+      <div id="gen-extra-row" style="display:none;flex-direction:column;gap:10px;">
+        <input class="caption-input" id="gen-caption" placeholder="Add a note or description (optional)..." />
+        <div class="location-row" id="gen-location-row">
+          <span>📍</span>
+          <span class="loc-text" id="gen-loc-text">Location not captured</span>
+          <button class="btn-get-loc" onclick="captureLocation()">Get GPS</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- GALLERY PANEL -->
+    <div class="gen-panel" id="gen-panel-gallery">
+      <div class="gen-gallery" id="gen-gallery-list">
+        <div class="gen-gallery-empty">📭 No uploads yet.<br>Switch to Upload tab to add photos.</div>
+      </div>
+    </div>
+
+    <!-- Footer (only on upload tab) -->
+    <div class="modal-footer" id="gen-modal-footer">
+      <div class="modal-footer-left" id="gen-file-count">No files selected</div>
+      <button class="btn-submit-upload" id="gen-submit-btn" onclick="submitGenUpload()" disabled>
+        ☁ Upload All
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="Full view" />
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import {
+    getFirestore, collection, getDocs, query, where, doc, setDoc, updateDoc, arrayUnion
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import {
+    getStorage, ref, uploadBytesResumable, getDownloadURL
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCiwULO00txSRfKrGDtK0GkxloFe8yjTTo",
+    authDomain: "munitrack-185a9.firebaseapp.com",
+    projectId: "munitrack-185a9",
+    storageBucket: "munitrack-185a9.firebasestorage.app",
+    messagingSenderId: "279869593227",
+    appId: "1:279869593227:web:55a93f703a7decff0b668e"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+  const storage = getStorage(app);
+
+  let currentWorker  = null;
+  let locationInterval = null;
+  let activeTaskId   = null;
+  let selectedFiles  = [];
+
+  // ── LOGIN ─────────────────────────────────────────
+  async function doLogin() {
+    const emailInput    = document.getElementById('email').value.trim().toLowerCase();
+    const passwordInput = document.getElementById('password').value.trim();
+    if (!emailInput || !passwordInput) return;
+
+    const loginBtn = document.querySelector('.btn-login');
+    loginBtn.innerHTML = 'Checking...';
+    loginBtn.disabled  = true;
+
+    try {
+      const q        = query(collection(db, "employees"), where("email", "==", emailInput));
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) { showToast('❌ No employee found with this email.', 'error'); return; }
+
+      let workerData = null;
+      snapshot.forEach(d => { if (d.data().password === passwordInput) workerData = { ...d.data(), id: d.id }; });
+      if (!workerData) { showToast('❌ Incorrect password!', 'error'); return; }
+
+      currentWorker = workerData;
+      const initials = workerData.fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+
+      document.getElementById('nav-avatar').textContent      = initials;
+      document.getElementById('profile-avatar').textContent  = initials;
+      document.getElementById('profile-name').textContent    = workerData.fullName;
+      document.getElementById('profile-email').textContent   = workerData.email;
+
+      document.getElementById('login-screen').classList.remove('active');
+      document.getElementById('dashboard-screen').classList.add('active');
+      document.getElementById('fab-wrap').classList.add('visible');
+
+      await loadWorkerTasks();
+      await loadDashboardStats();
+      startLiveLocationTracking();
+
+    } catch (e) {
+      showToast('Something went wrong. Please try again.', 'error');
+    } finally {
+      loginBtn.innerHTML = 'LOG IN → <div class="btn-shimmer"></div>';
+      loginBtn.disabled  = false;
+    }
+  }
+
+  // ── LOAD TASKS ────────────────────────────────────
+  async function loadWorkerTasks() {
+    const tasksList = document.querySelector('.tasks-list');
+    const workerEmail = document.getElementById('profile-email').textContent.trim();
+    try {
+      const q        = query(collection(db, "complaints"), where("assignedTo", "==", workerEmail));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        tasksList.innerHTML = '';
+        snapshot.forEach(docSnap => {
+          const data      = docSnap.data();
+          const taskId    = data.complaintId || docSnap.id;
+          const prioClass = (data.priority === 'high' || data.status === 'pending') ? 'high' : 'medium';
+          const stClass   = data.status === 'pending' ? 'pending' : (data.status === 'in-progress' ? 'inprogress' : 'done');
+          tasksList.innerHTML += buildTaskCard(taskId, data, prioClass, stClass);
+        });
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  function buildTaskCard(taskId, data, prioClass, stClass) {
+    return `
+      <div class="task-card" data-status="${stClass}" data-task-id="${taskId}">
+        <div class="task-stripe ${prioClass}"></div>
+        <div class="task-body">
+          <div class="task-top"><span class="task-id">#${taskId}</span></div>
+          <div class="task-title">${data.category || 'Task'} — ${(data.address||'').substring(0,45)}</div>
+          <div class="task-desc">${data.description || ''}</div>
+          <div class="task-meta">
+            <div class="meta-chip"><span class="dot">📍</span> ${data.address||'—'}</div>
+            <div class="meta-chip"><span class="dot">📅</span> ${data.dueDate ? new Date(data.dueDate).toLocaleDateString('en-IN') : 'ASAP'}</div>
+          </div>
+          <div class="progress-bar-wrap" style="margin-top:12px">
+            <div class="progress-bar" style="width:0%;background:var(--accent)"></div>
+          </div>
+        </div>
+        <div class="task-right">
+          <span class="priority-badge ${prioClass}">${prioClass.toUpperCase()}</span>
+          <span class="status-badge ${stClass}">${stClass.toUpperCase()}</span>
+        </div>
+        <div class="task-footer">
+          <div class="photo-thumbnails" id="thumbs-${taskId}"></div>
+          <button class="btn-upload-photo" onclick="openUploadModal('${taskId}','${(data.category||'Task').replace(/'/g,'')}')">
+            <span class="cam-icon">📷</span> Upload Photo
+          </button>
+        </div>
+      </div>`;
+  }
+
+  // ── STATS ─────────────────────────────────────────
+  async function loadDashboardStats() {
+    const workerEmail = document.getElementById('profile-email').textContent.trim();
+    try {
+      const q        = query(collection(db, "complaints"), where("assignedTo", "==", workerEmail));
+      const snapshot = await getDocs(q);
+      let total = 0, completed = 0, inProgress = 0;
+      snapshot.forEach(d => {
+        total++;
+        const s = d.data().status || 'pending';
+        if (s === 'resolved' || s === 'done') completed++;
+        else if (s === 'in-progress') inProgress++;
+      });
+      const vals = document.querySelectorAll('.stat-card .stat-value');
+      if (vals.length >= 3) { vals[0].textContent = total; vals[1].textContent = completed; vals[2].textContent = inProgress; }
+    } catch (e) {}
+  }
+
+  // ── LOCATION ──────────────────────────────────────
+  function startLiveLocationTracking() {
+    if (!navigator.geolocation) return;
+    const workerEmail = document.getElementById('profile-email').textContent.trim();
+    locationInterval = setInterval(() => {
+      navigator.geolocation.getCurrentPosition(async pos => {
+        try {
+          const locRef = doc(db, "worker_locations", workerEmail.replace(/[^a-zA-Z0-9]/g,'_'));
+          await setDoc(locRef, {
+            email: workerEmail,
+            fullName: document.getElementById('profile-name').textContent,
+            latitude: pos.coords.latitude, longitude: pos.coords.longitude,
+            timestamp: new Date().toISOString(), accuracy: pos.coords.accuracy
+          }, { merge: true });
+        } catch (e) {}
+      }, null, { enableHighAccuracy: true });
+    }, 15000);
+  }
+
+  // ── UPLOAD MODAL ──────────────────────────────────
+  window.openUploadModal = function(taskId, taskTitle) {
+    activeTaskId = taskId;
+    selectedFiles = [];
+    document.getElementById('preview-grid').innerHTML  = '';
+    document.getElementById('preview-grid').style.display = 'none';
+    document.getElementById('caption-row').style.display  = 'none';
+    document.getElementById('photo-caption').value        = '';
+    document.getElementById('file-input').value           = '';
+    document.getElementById('modal-task-label').textContent = 'Task: #' + taskId + ' · ' + taskTitle;
+    document.getElementById('modal-file-count').textContent = 'No files selected';
+    document.getElementById('submit-upload-btn').disabled   = true;
+    document.getElementById('upload-modal-overlay').classList.add('open');
+  };
+
+  window.closeUploadModal = function() {
+    document.getElementById('upload-modal-overlay').classList.remove('open');
+    activeTaskId  = null;
+    selectedFiles = [];
+  };
+
+  window.handleOverlayClick = function(e) {
+    if (e.target === document.getElementById('upload-modal-overlay')) closeUploadModal();
+  };
+
+  // Drag & drop
+  const dropZone = document.getElementById('drop-zone');
+  dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('drag-over');
+    handleFiles(e.dataTransfer.files);
+  });
+
+  window.handleFiles = function(files) {
+    const newFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (!newFiles.length) return;
+    selectedFiles = [...selectedFiles, ...newFiles];
+    renderPreviews();
+  };
+
+  function renderPreviews() {
+    const grid = document.getElementById('preview-grid');
+    grid.style.display = selectedFiles.length ? 'grid' : 'none';
+    document.getElementById('caption-row').style.display = selectedFiles.length ? 'block' : 'none';
+    document.getElementById('modal-file-count').textContent = selectedFiles.length + ' file' + (selectedFiles.length>1?'s':'') + ' selected';
+    document.getElementById('submit-upload-btn').disabled = !selectedFiles.length;
+
+    grid.innerHTML = '';
+    selectedFiles.forEach((file, i) => {
+      const item = document.createElement('div');
+      item.className = 'preview-item';
+      item.id = 'preview-' + i;
+      const url = URL.createObjectURL(file);
+      item.innerHTML = `
+        <img src="${url}" alt="preview" />
+        <button class="preview-remove" onclick="removeFile(${i})">✕</button>`;
+      grid.appendChild(item);
+    });
+  }
+
+  window.removeFile = function(i) {
+    selectedFiles.splice(i, 1);
+    renderPreviews();
+  };
+
+  // ── SHARED: file → base64 ─────────────────────────
+  function fileToBase64(file) {
+    return new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload  = () => res(reader.result);
+      reader.onerror = rej;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ── SHARED: try Firebase Storage, fall back to base64 ──
+  async function uploadFileWithFallback(file, storagePath) {
+    try {
+      const storageRef = ref(storage, storagePath);
+      const task       = uploadBytesResumable(storageRef, file);
+      return await new Promise((res, rej) => {
+        task.on('state_changed', null, rej,
+          async () => res({ url: await getDownloadURL(task.snapshot.ref), isBase64: false })
+        );
+      });
+    } catch (e) {
+      console.warn('Storage upload failed, falling back to base64:', e.code || e.message);
+      const base64 = await fileToBase64(file);
+      return { url: base64, isBase64: true };
+    }
+  }
+
+  // ── SUBMIT UPLOAD (task photos) ───────────────────
+  window.submitUpload = async function() {
+    if (!selectedFiles.length || !activeTaskId) return;
+
+    const btn     = document.getElementById('submit-upload-btn');
+    const caption = document.getElementById('photo-caption').value.trim();
+    btn.disabled  = true;
+    btn.textContent = 'Uploading...';
+
+    const uploadedUrls = [];
+
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file    = selectedFiles[i];
+      const item    = document.getElementById('preview-' + i);
+      const overlay = document.createElement('div');
+      overlay.className = 'preview-uploading';
+      overlay.innerHTML = '<div class="upload-spinner"></div><span>0%</span>';
+      item.appendChild(overlay);
+
+      try {
+        const workerEmail = document.getElementById('profile-email').textContent.trim();
+        const storagePath = `task_photos/${activeTaskId}/${workerEmail}_${Date.now()}_${i}_${file.name}`;
+        overlay.querySelector('span').textContent = 'Uploading...';
+        const result = await uploadFileWithFallback(file, storagePath);
+        uploadedUrls.push(result.url);
+        overlay.innerHTML = '<div class="preview-done">✓</div>';
+      } catch (e) {
+        overlay.innerHTML = '<div style="color:#ff4b5c;font-size:20px;">✗</div>';
+        console.error('Upload failed for file', i, e);
+        showToast('❌ Upload failed: ' + (e.code || e.message), 'error');
+      }
+    }
+
+    // Save to Firestore
+    if (uploadedUrls.length) {
+      try {
+        const workerEmail = document.getElementById('profile-email').textContent.trim();
+        const photoDocRef = doc(db, "task_photos", activeTaskId);
+        await setDoc(photoDocRef, {
+          taskId: activeTaskId,
+          photos: arrayUnion(...uploadedUrls.map(url => ({
+            url,
+            caption,
+            uploadedBy: workerEmail,
+            uploadedAt: new Date().toISOString()
+          })))
+        }, { merge: true });
+
+        // Show thumbnails on card
+        addThumbnailsToCard(activeTaskId, uploadedUrls);
+        showToast(`✅ ${uploadedUrls.length} photo${uploadedUrls.length>1?'s':''} uploaded!`, 'success');
+        setTimeout(closeUploadModal, 1200);
+      } catch (e) {
+        showToast('Photos uploaded but failed to save references.', 'error');
+        console.error(e);
+      }
+    } else {
+      showToast('⚠ No photos were uploaded.', 'error');
+    }
+
+    btn.disabled    = false;
+    btn.textContent = '☁ Upload All';
+  };
+
+  // ── THUMBNAILS ────────────────────────────────────
+  function addThumbnailsToCard(taskId, urls) {
+    const container = document.getElementById('thumbs-' + taskId);
+    if (!container) return;
+
+    const existing = container.querySelectorAll('.thumb-img').length;
+    const limit    = 3;
+    const toShow   = urls.slice(0, limit - existing);
+
+    toShow.forEach(url => {
+      const img = document.createElement('img');
+      img.className = 'thumb-img';
+      img.src       = url;
+      img.title     = 'Click to view';
+      img.onclick   = () => openLightbox(url);
+      container.appendChild(img);
+    });
+
+    const total = existing + urls.length;
+    const more  = total - limit;
+    const existingMore = container.querySelector('.thumb-more');
+    if (existingMore) existingMore.remove();
+    if (more > 0) {
+      const moreEl = document.createElement('div');
+      moreEl.className   = 'thumb-more';
+      moreEl.textContent = '+' + more;
+      container.appendChild(moreEl);
+    }
+  }
+
+  // ── LIGHTBOX ──────────────────────────────────────
+  window.openLightbox = function(src) {
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('lightbox').classList.add('open');
+  };
+  window.closeLightbox = function() {
+    document.getElementById('lightbox').classList.remove('open');
+  };
+
+  // ── FILTER ────────────────────────────────────────
+  window.filterTasks = function(status, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.task-card').forEach(card => {
+      card.style.display = (status === 'all' || card.dataset.status === status) ? '' : 'none';
+    });
+  };
+
+  // ── HELPERS ───────────────────────────────────────
+  function showToast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent  = msg;
+    t.className    = 'toast ' + type + ' show';
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  window.toggleProfile = function() {
+    document.getElementById('profile-dropdown').classList.toggle('open');
+  };
+
+  window.doLogout = function() {
+    if (locationInterval) clearInterval(locationInterval);
+    document.getElementById('fab-wrap').classList.remove('visible');
+    document.getElementById('dashboard-screen').classList.remove('active');
+    document.getElementById('login-screen').classList.add('active');
+  };
+
+  function updateClock() {
+    const c = document.getElementById('nav-clock');
+    if (c) c.textContent = new Date().toLocaleTimeString('en-IN', { hour12: false });
+  }
+  setInterval(updateClock, 1000); updateClock();
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeUploadModal(); closeLightbox(); closeGenModal(); }
+    if (e.key === 'Enter' && document.getElementById('login-screen').classList.contains('active')) doLogin();
+  });
+
+  window.doLogin = doLogin;
+
+  // ── FAB ───────────────────────────────────────────
+  let fabOpen = false;
+  window.toggleFab = function() {
+    fabOpen = !fabOpen;
+    document.getElementById('fab-main').classList.toggle('open', fabOpen);
+    document.getElementById('fab-options').classList.toggle('open', fabOpen);
+  };
+
+  // FAB visibility is controlled directly in doLogin / doLogout
+
+  // Close FAB when clicking outside
+  document.addEventListener('click', e => {
+    if (fabOpen && !document.getElementById('fab-wrap').contains(e.target)) {
+      fabOpen = false;
+      document.getElementById('fab-main').classList.remove('open');
+      document.getElementById('fab-options').classList.remove('open');
+    }
+  });
+
+  // ── GENERAL UPLOAD MODAL ──────────────────────────
+  let genFiles    = [];
+  let genLocation = null;
+  let genUploads  = [];
+
+  window.openGenModal = function(tab = 'upload') {
+    resetGenUpload();
+    document.getElementById('gen-modal-overlay').classList.add('open');
+    const tabEl = tab === 'gallery'
+      ? document.querySelector('.gen-tab:last-child')
+      : document.querySelector('.gen-tab:first-child');
+    switchGenTab(tab, tabEl);
+    if (tab === 'gallery') renderGenGallery();
+  };
+
+  window.closeGenModal = function() {
+    document.getElementById('gen-modal-overlay').classList.remove('open');
+    if (fabOpen) toggleFab();
+  };
+
+  window.handleGenOverlayClick = function(e) {
+    if (e.target === document.getElementById('gen-modal-overlay')) closeGenModal();
+  };
+
+  window.switchGenTab = function(tab, btn) {
+    document.querySelectorAll('.gen-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.gen-panel').forEach(p => p.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    document.getElementById('gen-panel-' + tab).classList.add('active');
+    document.getElementById('gen-modal-footer').style.display = tab === 'upload' ? 'flex' : 'none';
+    if (tab === 'gallery') renderGenGallery();
+  };
+
+  window.selectCat = function(el) {
+    document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+  };
+
+  // Drag & drop for general modal
+  const genDrop = document.getElementById('gen-drop-zone');
+  genDrop.addEventListener('dragover',  e => { e.preventDefault(); genDrop.classList.add('drag-over'); });
+  genDrop.addEventListener('dragleave', () => genDrop.classList.remove('drag-over'));
+  genDrop.addEventListener('drop', e => {
+    e.preventDefault(); genDrop.classList.remove('drag-over');
+    handleGenFiles(e.dataTransfer.files);
+  });
+
+  window.handleGenFiles = function(files) {
+    const imgs = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (!imgs.length) return;
+    genFiles = [...genFiles, ...imgs];
+    renderGenPreviews();
+  };
+
+  function renderGenPreviews() {
+    const grid = document.getElementById('gen-preview-grid');
+    grid.style.display = genFiles.length ? 'grid' : 'none';
+    document.getElementById('gen-extra-row').style.display = genFiles.length ? 'flex' : 'none';
+    document.getElementById('gen-file-count').textContent  = genFiles.length + ' file' + (genFiles.length > 1 ? 's' : '') + ' selected';
+    document.getElementById('gen-submit-btn').disabled     = !genFiles.length;
+    grid.innerHTML = '';
+    genFiles.forEach((file, i) => {
+      const item = document.createElement('div');
+      item.className = 'preview-item';
+      item.id = 'gen-preview-' + i;
+      item.innerHTML = `<img src="${URL.createObjectURL(file)}" /><button class="preview-remove" onclick="removeGenFile(${i})">✕</button>`;
+      grid.appendChild(item);
+    });
+  }
+
+  window.removeGenFile = function(i) { genFiles.splice(i, 1); renderGenPreviews(); };
+
+  window.captureLocation = function() {
+    const btn = document.querySelector('.btn-get-loc');
+    btn.textContent = '...';
+    navigator.geolocation.getCurrentPosition(pos => {
+      genLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      document.getElementById('gen-loc-text').textContent = genLocation.lat.toFixed(5) + ', ' + genLocation.lng.toFixed(5);
+      btn.textContent = '✓ Got it'; btn.style.color = 'var(--green)';
+    }, () => { btn.textContent = 'Failed'; btn.style.color = 'var(--red)'; }, { enableHighAccuracy: true });
+  };
+
+  window.submitGenUpload = async function() {
+    if (!genFiles.length) return;
+    const btn      = document.getElementById('gen-submit-btn');
+    const caption  = document.getElementById('gen-caption').value.trim();
+    const category = document.querySelector('.cat-chip.active')?.textContent.trim() || 'General';
+    const worker   = document.getElementById('profile-email').textContent.trim();
+    btn.disabled   = true; btn.textContent = 'Uploading...';
+
+    const uploadedItems = [];
+
+    for (let i = 0; i < genFiles.length; i++) {
+      const file    = genFiles[i];
+      const item    = document.getElementById('gen-preview-' + i);
+      const overlay = document.createElement('div');
+      overlay.className = 'preview-uploading';
+      overlay.innerHTML = '<div class="upload-spinner"></div><span>0%</span>';
+      item.appendChild(overlay);
+
+      try {
+        const storagePath = 'general_photos/' + worker.replace(/[^a-zA-Z0-9]/g,'_') + '/' + Date.now() + '_' + i + '_' + file.name;
+        overlay.querySelector('span').textContent = 'Uploading...';
+        const result = await uploadFileWithFallback(file, storagePath);
+        overlay.innerHTML = '<div class="preview-done">✓</div>';
+        uploadedItems.push({ url: result.url, name: file.name, category, caption, location: genLocation, uploadedBy: worker, uploadedAt: new Date().toISOString() });
+      } catch (e) {
+        overlay.innerHTML = '<div style="color:var(--red);font-size:20px">✗</div>';
+        console.error('Gen upload failed', i, e);
+        showToast('❌ Upload failed: ' + (e.code || e.message), 'error');
+      }
+    }
+
+    if (uploadedItems.length) {
+      try {
+        const docRef = doc(db, "general_photos", worker.replace(/[^a-zA-Z0-9]/g,'_'));
+        await setDoc(docRef, { photos: arrayUnion(...uploadedItems) }, { merge: true });
+        genUploads = [...genUploads, ...uploadedItems];
+        showToast('✅ ' + uploadedItems.length + ' photo' + (uploadedItems.length > 1 ? 's' : '') + ' uploaded!', 'success');
+        setTimeout(closeGenModal, 1300);
+      } catch (e) {
+        showToast('Uploaded but failed to save references.', 'error');
+      }
+    } else {
+      showToast('No photos were uploaded.', 'error');
+    }
+
+    btn.disabled = false; btn.textContent = '☁ Upload All';
+  };
+
+  function renderGenGallery() {
+    const list = document.getElementById('gen-gallery-list');
+    if (!genUploads.length) {
+      list.innerHTML = '<div class="gen-gallery-empty">📭 No uploads yet.<br>Switch to Upload tab to add photos.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    [...genUploads].reverse().forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'gallery-item';
+      div.innerHTML =
+        '<img src="' + item.url + '" onclick="openLightbox(\'' + item.url + '\')" />' +
+        '<div class="gallery-item-meta">' +
+          '<div class="gallery-item-name">' + item.name + '</div>' +
+          '<div class="gallery-item-sub">' + (item.caption || 'No note') + ' · ' + new Date(item.uploadedAt).toLocaleString('en-IN') + '</div>' +
+          (item.location ? '<div class="gallery-item-sub">📍 ' + item.location.lat.toFixed(4) + ', ' + item.location.lng.toFixed(4) + '</div>' : '') +
+        '</div>' +
+        '<span class="gallery-item-cat">' + item.category + '</span>';
+      list.appendChild(div);
+    });
+  }
+
+  function resetGenUpload() {
+    genFiles = []; genLocation = null;
+    document.getElementById('gen-preview-grid').innerHTML   = '';
+    document.getElementById('gen-preview-grid').style.display = 'none';
+    document.getElementById('gen-extra-row').style.display    = 'none';
+    document.getElementById('gen-caption').value              = '';
+    document.getElementById('gen-file-input').value           = '';
+    document.getElementById('gen-file-count').textContent     = 'No files selected';
+    document.getElementById('gen-submit-btn').disabled        = true;
+    document.getElementById('gen-loc-text').textContent       = 'Location not captured';
+    const locBtn = document.querySelector('.btn-get-loc');
+    if (locBtn) { locBtn.textContent = 'Get GPS'; locBtn.style.color = ''; }
+    document.querySelectorAll('.cat-chip').forEach((c, i) => c.classList.toggle('active', i === 0));
+  }
+</script>
+</body>
+</html>
